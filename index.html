@@ -85,6 +85,7 @@
             const variacionData = energyData.find(p => p['Nodo Padre'] === 'Variación de Inventarios');
             const exportacionData = energyData.find(p => p['Nodo Padre'] === 'Exportación');
             const ofertaTotalData = energyData.find(p => p['Nodo Padre'] === 'Oferta Total'); // Se usa para el color del Hub
+            const energiaNoAprovechadaData = energyData.find(p => p['Nodo Padre'] === 'Energía No aprovechada');
 
             if (!produccionData || !importacionData || !variacionData || !ofertaTotalData || !exportacionData) {
                 console.error('Faltan datos de nodos padres');
@@ -104,11 +105,13 @@
 
             function addNode(name, color) {
                 // Unificar el nodo 'Carbón mineral' para todos los flujos
+                // Asegurar que el color sea string
+                const safeColor = typeof color === 'string' ? color : '#888';
                 if (name === 'Carbón mineral') {
                     if (!nodeMap.has(name)) {
                         nodeMap.set(name, labels.length);
                         labels.push(name);
-                        nodeColors.push(color || '#888');
+                        nodeColors.push(safeColor);
                     }
                     return nodeMap.get(name);
                 }
@@ -116,17 +119,17 @@
                 if (!nodeMap.has(name)) {
                     nodeMap.set(name, labels.length);
                     labels.push(name);
-                    nodeColors.push(color || '#888');
+                    nodeColors.push(safeColor);
                 }
                 return nodeMap.get(name);
             }
 
             // --- 1. Definir Nodos Principales ---
-            const importacionIndex = addNode('Importación de energéticos primarios', importacionData.color);
-            const variacionIndex = addNode('Variación de inventarios de Energéticos primarios', variacionData.color);
-            const produccionIndex = addNode('Producción', produccionData.color);
-            const primariosHubIndex = addNode('Energéticos Primarios', ofertaTotalData.color);
-            const exportacionIndex = addNode('Exportación de energéticos primarios', exportacionData.color);
+            const importacionIndex = addNode(String('Importación de energéticos primarios'), importacionData.color);
+            const variacionIndex = addNode(String('Variación de inventarios de Energéticos primarios'), variacionData.color);
+            const produccionIndex = addNode(String('Producción'), produccionData.color);
+            const primariosHubIndex = addNode(String('Energéticos Primarios'), ofertaTotalData.color);
+            const exportacionIndex = addNode(String('Exportación de energéticos primarios'), exportacionData.color);
 
             // --- 2. Procesar Flujos de Entrada (Fuentes -> Tipos de Energía) ---
             const linkSigns = [];
@@ -147,7 +150,11 @@
                         source.push(parentIndex);
                         target.push(childIndex);
                         value.push(Math.abs(flowValue));
-                        linkColors.push(childColor.replace(')', ', 0.4)').replace('rgb', 'rgba'));
+                        linkColors.push(
+                            typeof childColor === 'string'
+                                ? childColor.replace(')', ', 0.4)').replace('rgb', 'rgba')
+                                : '#888'
+                        );
                         linkSigns.push(flowValue > 0 ? '+' : '-');
                         // Sumar o restar según el signo
                         if (allowNegatives && flowValue < 0) {
@@ -169,7 +176,11 @@
                 source.push(energyIndex);
                 target.push(primariosHubIndex);
                 value.push(totalValue);
-                linkColors.push(energyColor.replace(')', ', 0.4)').replace('rgb', 'rgba'));
+                linkColors.push(
+                    typeof energyColor === 'string'
+                        ? energyColor.replace(')', ', 0.4)').replace('rgb', 'rgba')
+                        : '#888'
+                );
             }
 
             // --- 4. Procesar Flujos de Salida ---
@@ -181,10 +192,36 @@
                 source.push(primariosHubIndex);
                 target.push(exportacionIndex);
                 value.push(exportacionTotal);
-                linkColors.push(exportacionData.color.replace(')', ', 0.4)').replace('rgb', 'rgba'));
+                linkColors.push(
+                    typeof exportacionData.color === 'string'
+                        ? exportacionData.color.replace(')', ', 0.4)').replace('rgb', 'rgba')
+                        : '#888'
+                );
             }
 
-            // Nodo de Energía No Aprovechada removido
+            // --- 4.1. Agregar nodo y flujo de Energía No aprovechada (solo Energía Primaria) ---
+            let energiaNoAprovechadaTotal = 0;
+            let energiaNoAprovechadaColor = '#888';
+            if (energiaNoAprovechadaData && Array.isArray(energiaNoAprovechadaData['Nodos Hijo'])) {
+                if (typeof energiaNoAprovechadaData.color === 'string') {
+                    energiaNoAprovechadaColor = energiaNoAprovechadaData.color;
+                }
+                energiaNoAprovechadaData['Nodos Hijo'].forEach(child => {
+                    if (child.tipo === 'Energía Primaria' && child[year] !== undefined && child[year] !== 0) {
+                        energiaNoAprovechadaTotal += child[year];
+                    }
+                });
+            }
+            let energiaNoAprovechadaIndex = null;
+            if (energiaNoAprovechadaTotal !== 0) {
+                energiaNoAprovechadaIndex = addNode('Energía No aprovechada', energiaNoAprovechadaColor);
+                source.push(primariosHubIndex);
+                target.push(energiaNoAprovechadaIndex);
+                value.push(Math.abs(energiaNoAprovechadaTotal));
+                linkColors.push(
+                    energiaNoAprovechadaColor.replace(')', ', 0.4)').replace('rgb', 'rgba')
+                );
+            }
 
             // --- 5. Forzar Posiciones de los Nodos ---
             const nodeX = new Array(labels.length);
@@ -208,7 +245,7 @@
             const variacionTotalAbs = Math.abs(variacionPositiva) + Math.abs(variacionNegativa);
 
             labels.forEach((label, i) => {
-                // Asignar posición horizontal y vertical para los nodos de entrada
+                // Asignar posición horizontal y vertical para los nodos de entrada y salida
                 if (label === 'Importación de energéticos primarios') {
                     nodeX[i] = 0.01;
                     nodeY[i] = 0.05; // Arriba
@@ -218,6 +255,9 @@
                 } else if (label === 'Producción') {
                     nodeX[i] = 0.01;
                     nodeY[i] = 0.95; // Abajo
+                } else if (label === 'Energía No aprovechada') {
+                    nodeX[i] = 0.99; // Salida derecha
+                    nodeY[i] = 0.99; // Abajo del todo
                 }
             });
 
