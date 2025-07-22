@@ -84,6 +84,7 @@
             const importacionData = energyData.find(p => p['Nodo Padre'] === 'Importación');
             const variacionData = energyData.find(p => p['Nodo Padre'] === 'Variación de Inventarios');
             const ofertaTotalData = energyData.find(p => p['Nodo Padre'] === 'Oferta Total'); // Se usa para el color del Hub
+            const energiaNoAprovechadaData = energyData.find(p => p['Nodo Padre'] === 'Energía No Aprovechada');
 
             if (!produccionData || !importacionData || !variacionData || !ofertaTotalData) {
                 console.error('Faltan datos de nodos padres');
@@ -148,7 +149,7 @@
                         value.push(Math.abs(flowValue));
                         linkColors.push(
                             typeof childColor === 'string'
-                                ? childColor.replace(')', ', 0.4)').replace('rgb', 'rgba')
+                                ? childColor
                                 : '#888'
                         );
                         linkSigns.push(flowValue > 0 ? '+' : '-');
@@ -174,7 +175,33 @@
                 value.push(totalValue);
                 linkColors.push(
                     typeof energyColor === 'string'
-                        ? energyColor.replace(')', ', 0.4)').replace('rgb', 'rgba')
+                        ? energyColor
+                        : '#888'
+                );
+            }
+
+            // --- 4. Procesar Flujos de Salida (Energéticos Primarios -> Energía No aprovechada) ---
+            let energiaNoAprovechadaTotal = 0;
+            let energiaNoAprovechadaColor = '#888';
+            if (energiaNoAprovechadaData && Array.isArray(energiaNoAprovechadaData['Nodos Hijo'])) {
+                if (typeof energiaNoAprovechadaData.color === 'string') {
+                    energiaNoAprovechadaColor = energiaNoAprovechadaData.color;
+                }
+                energiaNoAprovechadaData['Nodos Hijo'].forEach(child => {
+                    if (child.tipo === 'Energía Primaria' && child[year] !== undefined && child[year] !== 0) {
+                        energiaNoAprovechadaTotal += child[year];
+                    }
+                });
+            }
+            let energiaNoAprovechadaIndex = null;
+            if (energiaNoAprovechadaTotal !== 0) {
+                energiaNoAprovechadaIndex = addNode('Energía No Aprovechada', energiaNoAprovechadaColor);
+                source.push(primariosHubIndex);
+                target.push(energiaNoAprovechadaIndex);
+                value.push(Math.abs(energiaNoAprovechadaTotal));
+                linkColors.push(
+                    typeof energiaNoAprovechadaColor === 'string'
+                        ? energiaNoAprovechadaColor
                         : '#888'
                 );
             }
@@ -211,6 +238,12 @@
                 } else if (label === 'Producción') {
                     nodeX[i] = 0.01;
                     nodeY[i] = 0.95; // Abajo
+                } else if (label === 'Energía No Aprovechada') {
+                    nodeX[i] = 0.99; // Salida derecha
+                    nodeY[i] = 0.99; // Abajo del todo
+                } else if (label === 'Energéticos Primarios') {
+                    nodeX[i] = 0.5; // Mantener en el centro horizontalmente
+                    nodeY[i] = 0.8; // Mover hacia abajo para que los enlaces salgan de la parte inferior
                 }
             });
 
