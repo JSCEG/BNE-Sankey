@@ -85,7 +85,6 @@
             const variacionData = energyData.find(p => p['Nodo Padre'] === 'Variación de Inventarios');
             const exportacionData = energyData.find(p => p['Nodo Padre'] === 'Exportación');
             const ofertaTotalData = energyData.find(p => p['Nodo Padre'] === 'Oferta Total'); // Se usa para el color del Hub
-            const energiaNoAprovechadaData = energyData.find(p => p['Nodo Padre'] === 'Energía No Aprovechada');
 
             if (!produccionData || !importacionData || !variacionData || !ofertaTotalData || !exportacionData) {
                 console.error('Faltan datos de nodos padres');
@@ -183,48 +182,25 @@
             }
 
             // --- 4. Procesar Flujos de Salida (Energéticos Primarios -> Exportación y Energía No aprovechada) ---
-            let exportacionTotal = 0;
             exportacionData['Nodos Hijo'].forEach(child => {
-                if (child.tipo === 'Energía Primaria' && child[year] !== undefined && child[year] !== 0) {
-                    exportacionTotal += child[year];
+                const flowValue = child[year];
+                if (child.tipo === 'Energía Primaria' && flowValue !== undefined && flowValue !== 0) {
+                    const childName = child['Nodo Hijo'];
+                    const childColor = child.color;
+                    const energyIndex = nodeMap.get(childName); // Obtener el índice del nodo de energético primario
+
+                    if (energyIndex !== undefined) {
+                        source.push(energyIndex);
+                        target.push(exportacionIndex);
+                        value.push(Math.abs(flowValue));
+                        linkColors.push(
+                            typeof childColor === 'string'
+                                ? childColor
+                                : '#888'
+                        );
+                    }
                 }
             });
-            if (exportacionTotal !== 0) {
-                source.push(primariosHubIndex);
-                target.push(exportacionIndex);
-                value.push(Math.abs(exportacionTotal));
-                linkColors.push(
-                    typeof exportacionData.color === 'string'
-                        ? exportacionData.color
-                        : '#888'
-                );
-            }
-
-            let energiaNoAprovechadaTotal = 0;
-            let energiaNoAprovechadaColor = '#888';
-            if (energiaNoAprovechadaData && Array.isArray(energiaNoAprovechadaData['Nodos Hijo'])) {
-                if (typeof energiaNoAprovechadaData.color === 'string') {
-                    energiaNoAprovechadaColor = energiaNoAprovechadaData.color;
-                }
-                energiaNoAprovechadaData['Nodos Hijo'].forEach(child => {
-                    if (child.tipo === 'Energía Primaria' && child[year] !== undefined && child[year] !== 0) {
-                        energiaNoAprovechadaTotal += child[year];
-                    }
-                });
-            }
-            let energiaNoAprovechadaIndex = null;
-            if (energiaNoAprovechadaTotal !== 0) {
-                energiaNoAprovechadaIndex = addNode('Energía No Aprovechada', energiaNoAprovechadaColor);
-                source.push(primariosHubIndex);
-                target.push(energiaNoAprovechadaIndex);
-                value.push(Math.abs(energiaNoAprovechadaTotal));
-                linkColors.push(
-                    typeof energiaNoAprovechadaColor === 'string'
-                        ? energiaNoAprovechadaColor
-                        : '#888'
-                );
-            }
-
             // --- 5. Forzar Posiciones de los Nodos ---
             const nodeX = new Array(labels.length);
             const nodeY = new Array(labels.length);
@@ -257,9 +233,6 @@
                 } else if (label === 'Producción') {
                     nodeX[i] = 0.01;
                     nodeY[i] = 0.95; // Abajo
-                } else if (label === 'Energía No Aprovechada') {
-                    nodeX[i] = 0.99; // Salida derecha
-                    nodeY[i] = 0.99; // Abajo del todo
                 } else if (label === 'Exportación') {
                     nodeX[i] = 0.99; // Salida derecha
                     nodeY[i] = 0.9; // Un poco más arriba que Energía No Aprovechada
