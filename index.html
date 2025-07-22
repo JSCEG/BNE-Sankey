@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama de Sankey de Energía</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        #sankey-diagram { width: 95vw; height: 80vh; }
+    </style>
+</head>
+<body>
+    <h1>Diagrama de Sankey de Energía en México</h1>
+    <div>
+        <label for="year-selector">Selecciona un año:</label>
+        <select id="year-selector"></select>
+    </div>
+    <div id="sankey-diagram"></div>
+
+    <script>
+        const yearSelector = document.getElementById('year-selector');
+        const sankeyDiv = document.getElementById('sankey-diagram');
+        let energyData = [];
+        let allNodes = [];
+
+        // Cargar los datos desde el archivo JSON
+        fetch('./datos_energia_completo.json')
+            .then(response => response.json())
+            .then(data => {
+                energyData = data.Datos;
+                populateYearSelector();
+                // Inicializar el gráfico con el primer año disponible
+                updateSankey(yearSelector.value);
+            })
+            .catch(error => console.error('Error al cargar el JSON:', error));
+
+        // Poblar el selector de años dinámicamente
+        function populateYearSelector() {
+            const years = new Set();
+            energyData.forEach(padre => {
+                padre['Nodos Hijo'].forEach(hijo => {
+                    Object.keys(hijo).forEach(key => {
+                        if (!isNaN(key) && key.length === 4) {
+                            years.add(key);
+                        }
+                    });
+                });
+            });
+
+            const sortedYears = Array.from(years).sort((a, b) => b - a);
+
+            sortedYears.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelector.appendChild(option);
+            });
+
+            // Añadir el evento para actualizar el gráfico cuando cambia el año
+            yearSelector.addEventListener('change', (event) => {
+                updateSankey(event.target.value);
+            });
+        }
+
+        // Función para actualizar el diagrama de Sankey (Etapa 1.7: Añadir Salidas Completas)
+        function updateSankey(year) {
+            console.log(`Actualizando gráfico para el año: ${year}`);
+
+            Plotly.purge(sankeyDiv);
+
+            const produccionData = energyData.find(p => p['Nodo Padre'] === 'Producción');
+            const importacionData = energyData.find(p => p['Nodo Padre'] === 'Importación');
+            const variacionData = energyData.find(p => p['Nodo Padre'] === 'Variación de Inventarios');
+            const exportacionData = energyData.find(p => p['Nodo Padre'] === 'Exportación');
+            const noAprovechadaData = energyData.find(p => p['Nodo Padre'] === 'Energía No Aprovechada'); // Corregido!
+            const ofertaTotalData = energyData.find(p => p['Nodo Padre'] === 'Oferta Total'); // Se usa para el color del Hub
+
+            if (!produccionData || !importacionData || !variacionData || !ofertaTotalData || !exportacionData || !noAprovechadaData) {
+                console.error('Faltan datos de nodos padres (No se encontró Energía No Aprovechada, etc)');
+                Plotly.react(sankeyDiv, [], { title: `Datos incompletos para ${year}` });
+                return;
+            }
+
+            const labels = [];
+            const nodeColors = [];
+            const nodeMap = new Map();
+            const primaryEnergyTotals = new Map();
+
+            const source = [];
+            const target = [];
+            const value = [];
+            const linkColors = [];
+
+            function addNode(name, color) {
+                if (!nodeMap.has(name)) {
+                    nodeMap.set(name, labels.length);
+                    labels.push(name);
+                    nodeColors.push(color || '#888');
+                }
+                return nodeMap.get(name);
+            }
+
+            // --- 1. Definir Nodos Principales ---
+            const importacionIndex = addNode('Importación de energéticos primarios', importacionData.color);
+            const variacionIndex = addNode('Variación de inventarios de Energéticos primarios', variacionData.color);
+            const produccionIndex = addNode('Producción', produccionData.color);
+            const primariosHubIndex = addNode('Energéticos Primarios', ofertaTotalData.color);
+            const exportacionIndex = addNode('Exportación de energéticos primarios', exportacionData.color);
+            const noAprovechadaIndex = addNode('Energia no aprovechada de energeticos primarios', noAprovechadaData.color);
+
+            // --- 2. Procesar Flujos de Entrada (Fuentes -> Tipos de Energía) ---
+            const processParentNode = (nodeData, parentIndex) => {
+                nodeData['Nodos Hijo'].forEach(child => {
+                    const flowValue = child[year];
+                    if (child.tipo === 'Energía Primaria' && flowValue && flowValue > 0) {
+                        const childName = child['Nodo Hijo'];
+                        const childColor = child.color;
+                        const childIndex = addNode(childName, childColor);
+                        source.push(parentIndex);
+                        target.push(childIndex);
+                        value.push(flowValue);
+                        linkColors.push(childColor.replace(')', ', 0.4)').replace('rgb', 'rgba'));
+                        primaryEnergyTotals.set(childName, (primaryEnergyTotals.get(childName) || 0) + flowValue);
+                    }
+                });
+            };
+            processParentNode(importacionData, importacionIndex);
+            processParentNode(variacionData, variacionIndex);
+            processParentNode(produccionData, produccionIndex);
+
+            // --- 3. Procesar Flujos (Tipos de Energía -> Hub "Energéticos Primarios") ---
+            for (const [energyName, totalValue] of primaryEnergyTotals.entries()) {
+                const energyIndex = nodeMap.get(energyName);
+                const energyColor = nodeColors[energyIndex];
+                source.push(energyIndex);
+                target.push(primariosHubIndex);
+                value.push(totalValue);
+                linkColors.push(energyColor.replace(')', ', 0.4)').replace('rgb', 'rgba'));
+            }
+
+            // --- 4. Procesar Flujos de Salida ---
+            let exportacionTotal = 0;
+            exportacionData['Nodos Hijo'].forEach(child => {
+                if (child.tipo === 'Energía Primaria' && child[year] > 0) exportacionTotal += child[year];
+            });
+            if (exportacionTotal > 0) {
+                source.push(primariosHubIndex);
+                target.push(exportacionIndex);
+                value.push(exportacionTotal);
+                linkColors.push(exportacionData.color.replace(')', ', 0.4)').replace('rgb', 'rgba'));
+            }
+
+            let noAprovechadaTotal = 0;
+            noAprovechadaData['Nodos Hijo'].forEach(child => {
+                if (child.tipo === 'Energía Primaria' && child[year] < 0) {
+                    noAprovechadaTotal += Math.abs(child[year]);
+                }
+            });
+            if (noAprovechadaTotal > 0) {
+                source.push(primariosHubIndex);
+                target.push(noAprovechadaIndex);
+                value.push(noAprovechadaTotal);
+                linkColors.push(noAprovechadaData.color.replace(')', ', 0.4)').replace('rgb', 'rgba'));
+            }
+
+            // --- 5. Forzar Posiciones de los Nodos ---
+            const nodeX = new Array(labels.length);
+            const nodeY = new Array(labels.length);
+            const ySourcePositions = {
+                'Importación de energéticos primarios': 0.05,
+                'Variación de inventarios de Energéticos primarios': 0.5,
+                'Producción': 0.95
+            };
+
+            labels.forEach((label, i) => {
+                if (ySourcePositions[label] !== undefined) {
+                    nodeX[i] = 0.01; // Columna 1: Fuentes
+                    nodeY[i] = ySourcePositions[label];
+                } else if (label === 'Energéticos Primarios') {
+                    nodeX[i] = 0.6; // Columna 3: Hub
+                    nodeY[i] = 0.5;
+                } else if (label === 'Exportación de energéticos primarios') {
+                    nodeX[i] = 0.99; // Columna 4: Salidas
+                    nodeY[i] = 0.25; // Arriba a la derecha
+                } else if (label === 'Energia no aprovechada de energeticos primarios') {
+                    nodeX[i] = 0.99; // Columna 4: Salidas
+                    nodeY[i] = 0.75; // Abajo a la derecha
+                } else {
+                    nodeX[i] = 0.3; // Columna 2: Tipos de energía
+                }
+            });
+
+            const data = {
+                type: "sankey",
+                orientation: "h",
+                node: { pad: 15, thickness: 20, line: { color: "black", width: 0.5 }, label: labels, color: nodeColors, hovertemplate: '%{label}<br>Total: %{value:,.2f} PJ<extra></extra>', x: nodeX, y: nodeY },
+                link: { source: source, target: target, value: value, color: linkColors, hovertemplate: '%{source.label} → %{target.label}<br>%{value:,.2f} PJ<extra></extra>' }
+            };
+
+            const layout = { title: `Flujo de Fuentes a Energéticos Primarios y Salidas - ${year} (Valores en PJ)`, font: { size: 12 } };
+            const config = { displaylogo: false, toImageButtonOptions: { format: 'png', filename: `sankey_energia_primaria_${year}`, setBackground: 'transparent' } };
+
+            Plotly.newPlot(sankeyDiv, [data], layout, config);
+        }
+    </script>
+</body>
+</html>
