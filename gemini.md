@@ -188,26 +188,47 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
   * `Coquizadoras y Hornos`
   * `Refinerías y Despuntadoras`
   * `Plantas de Gas y Fraccionadoras`
-  * `Centrales Eléctricas`
+  * Nodos de Tecnología de Generación: `Carboeléctrica`, `Térmica Convencional`, `Combustión Interna`, `Turbogás`, `Ciclo Combinado`, `Nucleoeléctrica`, `Cogeneración`, `Geotérmica`, `Eólica`, `Solar Fotovoltaica`.
+  * `Centrales Eléctricas`: Actúa como un nodo de convergencia para toda la energía eléctrica generada.
   * `Exportación`
   * `Energía No Aprovechada`
   * `Consumo Propio del Sector`
-* **Flujos Actuales:**
 
-  * `Producción` -> `Oferta Total (Hub)` (por cada energético primario)
-  * `Importación` -> `Oferta Total (Hub)` (por cada energético primario)
-  * `Variación de Inventarios` -> `Oferta Total (Hub)` (por cada energético primario, manejando valores positivos y negativos)
-  * `Oferta Total (Hub)` -> `Oferta Interna Bruta` (por cada energético primario)
-  * `Oferta Interna Bruta` -> `Coquizadoras y Hornos` (para Carbón mineral)
-  * `Oferta Interna Bruta` -> `Refinerías y Despuntadoras` (para Petróleo crudo)
-  * `Oferta Interna Bruta` -> `Plantas de Gas y Fraccionadoras` (para Gas natural y Condensados)
-  * `Oferta Interna Bruta` -> `Centrales Eléctricas` (para energéticos primarios)
-  * `Refinerías y Despuntadoras` -> `Centrales Eléctricas` (para Diesel, Combustóleo y Gas natural seco)
-  * `Plantas de Gas y Fraccionadoras` -> `Centrales Eléctricas` (para Gas natural seco)
-  * `Coquizadoras y Hornos` -> `Centrales Eléctricas` (para Coque de carbón)
-  * `Oferta Total (Hub)` -> `Exportación` (por cada energético primario)
-  * `Oferta Total (Hub)` -> `Energía No Aprovechada` (por cada energético primario)
-  * `Oferta Total (Hub)` -> `Consumo Propio del Sector` (por cada energético primario)
+* **Flujos Principales:**
+
+  1.  **`Producción`, `Importación`, `Variación de Inventarios` -> `Oferta Total (Hub)`:**
+      *   Los energéticos primarios fluyen desde sus fuentes originales hacia un nodo centralizador (`Oferta Total (Hub)`).
+
+  2.  **`Oferta Total (Hub)` -> `Oferta Interna Bruta`, `Exportación`, etc.:**
+      *   Desde el hub, la energía se distribuye a la `Oferta Interna Bruta` y a otros nodos de salida como `Exportación`.
+
+  3.  **`Oferta Interna Bruta` -> Centros de Transformación (`Refinerías`, `Coquizadoras`, `Plantas de Gas`):**
+      *   Los energéticos primarios se envían a los centros de transformación correspondientes (ej. `Petróleo crudo` a `Refinerías`).
+
+  4.  **Fuentes de Energía -> Tecnologías de Generación:**
+      *   Los energéticos (tanto primarios de `Oferta Interna Bruta` como secundarios de los centros de transformación) fluyen hacia los nodos de tecnología de generación que los consumen.
+      *   La lógica para esta distribución se basa en un mapeo de combustibles a tecnologías (ver `fuelToTechMap` en `index.html`).
+
+  5.  **Tecnologías de Generación -> `Centrales Eléctricas`:**
+      *   Cada nodo de tecnología de generación suma la energía que recibe y la convierte en `Energía eléctrica`, que luego fluye hacia el nodo `Centrales Eléctricas`.
+
+* **Mapeo de Combustibles a Tecnologías de Generación (`fuelToTechMap`):**
+
+  Para dirigir los flujos de energía correctamente, se utiliza un objeto en `index.html` que mapea cada tipo de combustible a la tecnología de generación que lo utiliza. A continuación se muestra una simplificación de este mapeo:
+
+  ```javascript
+  const fuelToTechMap = {
+      'Carbón mineral': carboelectricaIndex,
+      'Coque de carbón': carboelectricaIndex,
+      'Combustóleo': termicaConvencionalIndex,
+      'Diesel': combustionInternaIndex,
+      'Gas natural': cicloCombinadoIndex,
+      'Gas natural seco': cicloCombinadoIndex,
+      'Energía Nuclear': nucleoelectricaIndex,
+      // ... y así sucesivamente para los demás combustibles
+  };
+  ```
+
 * **Reglas de Colores:**
 
   * Los colores de los nodos padre y los enlaces se toman directamente de la propiedad `color` definida en cada "Nodo Padre" y "Nodo Hijo" en `datos_energia_completo.json`.
