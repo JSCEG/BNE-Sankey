@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diagrama de Sankey de Energía</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <style>
         body {
             font-family: sans-serif;
@@ -409,28 +409,40 @@
                 // Asignar posición horizontal y vertical para los nodos de entrada y salida
                 if (label === 'Importación de energéticos primarios') {
                     nodeX[i] = 0.01;
-                    nodeY[i] = 0.05; // Arriba
+                    nodeY[i] = 0.1; // Ajustado para más espacio
                 } else if (label === 'Variación de inventarios de Energéticos primarios') {
                     nodeX[i] = 0.01;
-                    nodeY[i] = 0.5; // Medio
+                    nodeY[i] = 0.3; // Ajustado para más espacio
                 } else if (label === 'Producción') {
                     nodeX[i] = 0.01;
-                    nodeY[i] = 0.95; // Abajo
+                    nodeY[i] = 0.7; // Ajustado para más espacio
+                } else if (label === 'Oferta Total (Hub)') {
+                    nodeX[i] = 0.3; // Posición horizontal del hub
+                    nodeY[i] = 0.4; // Ajustado para alinear con los flujos de entrada
                 } else if (label === 'Oferta Interna Bruta') {
-                    nodeX[i] = 0.75; // Posición intermedia entre el hub y las salidas
-                    nodeY[i] = 0.5; // Centrado verticalmente
+                    nodeX[i] = 0.4; // Más cerca de Oferta Total (Hub)
+                    nodeY[i] = 0.1; // Arriba de Exportación
+                } else if (label === 'Refinerías y Despuntadoras') {
+                    nodeX[i] = 0.5; // A la derecha de Oferta Interna Bruta
+                    nodeY[i] = 0.2; // Posición vertical
+                } else if (label === 'Plantas de Gas y Fraccionadoras') {
+                    nodeX[i] = 0.5; // A la derecha de Oferta Interna Bruta
+                    nodeY[i] = 0.3; // Posición vertical
+                } else if (label === 'Coquizadoras y Hornos') {
+                    nodeX[i] = 0.5; // A la derecha de Oferta Interna Bruta
+                    nodeY[i] = 0.4; // Posición vertical
+                } else if (label === 'Centrales Eléctricas') {
+                    nodeX[i] = 0.6; // Más a la derecha
+                    nodeY[i] = 0.03; // Un poco más abajo
                 } else if (label === 'Exportación') {
-                    nodeX[i] = 0.99; // Salida derecha
-                    nodeY[i] = 0.8; // Un poco más arriba que Energía No Aprovechada
+                    nodeX[i] = 0.4; // Posición horizontal después del hub
+                    nodeY[i] = 0.7; // Posición vertical
                 } else if (label === 'Consumo Propio del Sector') {
-                    nodeX[i] = 0.99; // Salida derecha
-                    nodeY[i] = 0.9; // Entre Exportación y Energía No Aprovechada
+                    nodeX[i] = 0.4; // Posición horizontal después del hub
+                    nodeY[i] = 0.8; // Posición vertical
                 } else if (label === 'Energía No Aprovechada') {
-                    nodeX[i] = 0.99; // Salida derecha
-                    nodeY[i] = 0.99; // Abajo del todo
-                } else if (label === 'Energéticos Primarios') {
-                    nodeX[i] = 0.5; // Mantener en el centro horizontalmente
-                    nodeY[i] = 0.8; // Mover hacia abajo para que los enlaces salgan de la parte inferior
+                    nodeX[i] = 0.4; // Posición horizontal después del hub
+                    nodeY[i] = 0.9; // Posición vertical
                 }
             });
 

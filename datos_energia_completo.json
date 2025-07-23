@@ -3163,8 +3163,8 @@
           "2020": -27.14,
           "2021": -19.26,
           "2022": -18.6,
-          "2023": 0.0,
-          "2024": 0.0,
+          "2023": 0.0001,
+          "2024": 0.0001,
           "descripcion": "Es una roca sedimentaria de color negro, muy rica en carbono y con cantidades variables de otros elementos como hidrógeno, azufre, oxígeno y nitrógeno. Se forma por el sepultamiento de restos vegetales en cuencas someras durante millones de años, arde fácilmente y es uno de los combustibles fósiles más utilizados.",
           "id_hijo": 1,
           "color": "#36454F"

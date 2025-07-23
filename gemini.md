@@ -40,6 +40,52 @@ Con el contexto recopilado, formula un plan detallado. Esto puede implicar:
 - **Reutilización de Nodos Hijos:** Los nodos hijos se repiten en cada nodo padre con diferentes valores.
 - **Orden de Listado:** Se utiliza un `id_orden` para listar los nodos hijos en un orden específico.
 
+#### Posiciones Iniciales de Nodos en `index.html` (Sección `updateSankey`)
+
+Para asegurar una visualización clara y evitar solapamientos, se han definido las siguientes posiciones iniciales para los nodos clave en el diagrama de Sankey. Estas coordenadas `nodeX` (horizontal) y `nodeY` (vertical) se encuentran en la función `updateSankey` dentro del script de `index.html`:
+
+```javascript
+            labels.forEach((label, i) => {
+                if (label === 'Importación de energéticos primarios') {
+                    nodeX[i] = 0.01;
+                    nodeY[i] = 0.1;
+                } else if (label === 'Variación de inventarios de Energéticos primarios') {
+                    nodeX[i] = 0.01;
+                    nodeY[i] = 0.3;
+                } else if (label === 'Producción') {
+                    nodeX[i] = 0.01;
+                    nodeY[i] = 0.7;
+                } else if (label === 'Oferta Total (Hub)') {
+                    nodeX[i] = 0.3;
+                    nodeY[i] = 0.4;
+                } else if (label === 'Oferta Interna Bruta') {
+                    nodeX[i] = 0.4;
+                    nodeY[i] = 0.1;
+                } else if (label === 'Exportación') {
+                    nodeX[i] = 0.4;
+                    nodeY[i] = 0.7;
+                } else if (label === 'Consumo Propio del Sector') {
+                    nodeX[i] = 0.4;
+                    nodeY[i] = 0.8;
+                } else if (label === 'Energía No Aprovechada') {
+                    nodeX[i] = 0.4;
+                    nodeY[i] = 0.9;
+                } else if (label === 'Refinerías y Despuntadoras') {
+                    nodeX[i] = 0.5;
+                    nodeY[i] = 0.2;
+                } else if (label === 'Plantas de Gas y Fraccionadoras') {
+                    nodeX[i] = 0.5;
+                    nodeY[i] = 0.3;
+                } else if (label === 'Coquizadoras y Hornos') {
+                    nodeX[i] = 0.5;
+                    nodeY[i] = 0.4;
+                } else if (label === 'Centrales Eléctricas') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.03;
+                }
+            });
+```
+
 ## Nodos Padre
 
 A continuación se presenta la lista de nodos padre utilizada en el archivo datos_energia_completo.json, junto con su respectivo id_padre:
