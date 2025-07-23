@@ -317,7 +317,55 @@
                 }
             });
 
-            // --- 10. Procesar Flujos de Salida (Oferta Total -> Consumo Propio del Sector) ---
+            // --- 10. Procesar Flujos (Refinerías y Despuntadoras -> Centrales Eléctricas) ---
+            refineriasDespuntadorasData['Nodos Hijo'].forEach(child => {
+                const flowValue = child[year];
+                if ((child['Nodo Hijo'] === 'Diesel' || child['Nodo Hijo'] === 'Combustóleo' || child['Nodo Hijo'] === 'Gas natural seco') && child.tipo === 'Energía Secundaria' && flowValue !== undefined && flowValue !== 0) {
+                    const childColor = child.color;
+                    source.push(refineriasDespuntadorasIndex);
+                    target.push(centralesElectricasIndex);
+                    value.push(Math.abs(flowValue));
+                    linkColors.push(
+                        typeof childColor === 'string'
+                            ? childColor
+                            : '#888'
+                    );
+                }
+            });
+
+            // --- 11. Procesar Flujos (Plantas de Gas y Fraccionadoras -> Centrales Eléctricas) ---
+            plantasGasFraccionadorasData['Nodos Hijo'].forEach(child => {
+                const flowValue = child[year];
+                if (child['Nodo Hijo'] === 'Gas natural seco' && child.tipo === 'Energía Secundaria' && flowValue !== undefined && flowValue !== 0) {
+                    const childColor = child.color;
+                    source.push(plantasGasFraccionadorasIndex);
+                    target.push(centralesElectricasIndex);
+                    value.push(Math.abs(flowValue));
+                    linkColors.push(
+                        typeof childColor === 'string'
+                            ? childColor
+                            : '#888'
+                    );
+                }
+            });
+
+            // --- 12. Procesar Flujos (Coquizadoras y Hornos -> Centrales Eléctricas) ---
+            coquizadorasHornosData['Nodos Hijo'].forEach(child => {
+                const flowValue = child[year];
+                if (child['Nodo Hijo'] === 'Coque de carbón' && child.tipo === 'Energía Secundaria' && flowValue !== undefined && flowValue !== 0) {
+                    const childColor = child.color;
+                    source.push(coquizadorasHornosIndex);
+                    target.push(centralesElectricasIndex);
+                    value.push(Math.abs(flowValue));
+                    linkColors.push(
+                        typeof childColor === 'string'
+                            ? childColor
+                            : '#888'
+                    );
+                }
+            });
+
+            // --- 13. Procesar Flujos de Salida (Oferta Total -> Consumo Propio del Sector) ---
             consumoPropioData['Nodos Hijo'].forEach(child => {
                 const flowValue = child[year];
                 if (child.tipo === 'Energía Primaria' && flowValue !== undefined && flowValue !== 0) {
