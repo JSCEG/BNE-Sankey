@@ -84,7 +84,7 @@
             const importacionData = energyData.find(p => p['Nodo Padre'] === 'Importación');
             const variacionData = energyData.find(p => p['Nodo Padre'] === 'Variación de Inventarios');
             const exportacionData = energyData.find(p => p['Nodo Padre'] === 'Exportación');
-            const ofertaInternaBrutaData = energyData.find(p => p['Nodo Padre'] === 'Oferta Interna Bruta'); // Se usa para el color del Hub
+            const ofertaInternaBrutaData = energyData.find(p => p['Nodo Padre'] === 'Oferta Total'); // Se usa para el color del Hub
             const energiaNoAprovechadaData = energyData.find(p => p['Nodo Padre'] === 'Energía No Aprovechada');
             const consumoPropioData = energyData.find(p => p['Nodo Padre'] === 'Consumo Propio del Sector');
 
@@ -129,7 +129,7 @@
             const importacionIndex = addNode(String('Importación de energéticos primarios'), importacionData.color);
             const variacionIndex = addNode(String('Variación de inventarios de Energéticos primarios'), variacionData.color);
             const produccionIndex = addNode(String('Producción'), produccionData.color);
-            const primariosHubIndex = addNode(String('Oferta Interna Bruta'), ofertaInternaBrutaData.color);
+            const primariosHubIndex = addNode(String('Oferta Total'), ofertaInternaBrutaData.color);
             const exportacionIndex = addNode(String('Exportación'), exportacionData.color);
             const energiaNoAprovechadaIndex = addNode(String('Energía No Aprovechada'), energiaNoAprovechadaData.color);
             const consumoPropioIndex = addNode(String('Consumo Propio del Sector'), consumoPropioData.color);
@@ -224,7 +224,7 @@
                     }
                 }
             });
-            // --- 5. Procesar Flujos de Salida (Oferta Interna Bruta -> Consumo Propio del Sector) ---
+            // --- 5. Procesar Flujos de Salida (Oferta Total -> Consumo Propio del Sector) ---
             consumoPropioData['Nodos Hijo'].forEach(child => {
                 const flowValue = child[year];
                 if (child.tipo === 'Energía Primaria' && flowValue !== undefined && flowValue !== 0) {
@@ -328,7 +328,7 @@
                 link: { source: source, target: target, value: value, color: linkColors, hovertemplate: customLinkHover }
             };
 
-            const layout = { title: `Flujo de Fuentes a Oferta Interna Bruta y Salidas - ${year} (Valores en PJ)`, font: { size: 12 } };
+            const layout = { title: `Flujo de Fuentes a Oferta Total y Salidas - ${year} (Valores en PJ)`, font: { size: 12 } };
             const config = { displaylogo: false, toImageButtonOptions: { format: 'png', filename: `sankey_energia_primaria_${year}`, setBackground: 'transparent' } };
 
             Plotly.newPlot(sankeyDiv, [data], layout, config);
