@@ -33,6 +33,37 @@ Con el contexto recopilado, formula un plan detallado. Esto puede implicar:
 - **Reutilización de Nodos Hijos:** Los nodos hijos se repiten en cada nodo padre con diferentes valores.
 - **Orden de Listado:** Se utiliza un `id_orden` para listar los nodos hijos en un orden específico.
 
+#### Relaciones y Flujos de Nodos (Detectados en `index.html` y `datos_energia_completo.json`):
+
+*   **Nodos Padre Principales:**
+    *   `Producción`
+    *   `Importación`
+    *   `Variación de Inventarios`
+    *   `Oferta Total (Hub)`: Actúa como un nodo centralizador para los energéticos primarios.
+    *   `Oferta Interna Bruta`
+    *   `Exportación`
+    *   `Energía No Aprovechada`
+    *   `Consumo Propio del Sector`
+
+*   **Flujos Actuales:**
+    *   `Producción` -> `Oferta Total (Hub)` (por cada energético primario)
+    *   `Importación` -> `Oferta Total (Hub)` (por cada energético primario)
+    *   `Variación de Inventarios` -> `Oferta Total (Hub)` (por cada energético primario, manejando valores positivos y negativos)
+    *   `Oferta Total (Hub)` -> `Oferta Interna Bruta` (por cada energético primario)
+    *   `Oferta Total (Hub)` -> `Exportación` (por cada energético primario)
+    *   `Oferta Total (Hub)` -> `Energía No Aprovechada` (por cada energético primario)
+    *   `Oferta Total (Hub)` -> `Consumo Propio del Sector` (por cada energético primario)
+
+*   **Reglas de Colores:**
+    *   Los colores de los nodos padre y los enlaces se toman directamente de la propiedad `color` definida en cada "Nodo Padre" y "Nodo Hijo" en `datos_energia_completo.json`.
+    *   Se utiliza `typeof color === 'string' ? color : '#888'` para asegurar que el color sea un string válido, usando un gris por defecto si no lo es.
+
+*   **Patrones Detectados:**
+    *   Los "Nodos Hijo" se identifican por `Nodo Hijo` (nombre), `tipo` (Energía Primaria/Secundaria), `id_hijo` y `color`.
+    *   Los valores de flujo se obtienen por año (ej. `2010`, `2011`).
+    *   El `id_hijo` se utiliza para ordenar los nodos hijo dentro de cada nodo padre.
+    *   Los valores negativos en `Variación de Inventarios` se manejan con `Math.abs()` para el valor del enlace, pero se suman/restan al `primaryEnergyTotals` según su signo.
+
 ### 4. Implementar los Cambios
 Utiliza las herramientas disponibles para aplicar los cambios según el plan:
 - **Modificación de Archivos:** Usa `replace` para cambios específicos en el contenido de los archivos o `write_file` para crear nuevos archivos o sobrescribir contenido.
