@@ -41,6 +41,10 @@ Con el contexto recopilado, formula un plan detallado. Esto puede implicar:
     *   `Variación de Inventarios`
     *   `Oferta Total (Hub)`: Actúa como un nodo centralizador para los energéticos primarios.
     *   `Oferta Interna Bruta`
+    *   `Coquizadoras y Hornos`
+    *   `Refinerías y Despuntadoras`
+    *   `Plantas de Gas y Fraccionadoras`
+    *   `Centrales Eléctricas`
     *   `Exportación`
     *   `Energía No Aprovechada`
     *   `Consumo Propio del Sector`
@@ -50,6 +54,10 @@ Con el contexto recopilado, formula un plan detallado. Esto puede implicar:
     *   `Importación` -> `Oferta Total (Hub)` (por cada energético primario)
     *   `Variación de Inventarios` -> `Oferta Total (Hub)` (por cada energético primario, manejando valores positivos y negativos)
     *   `Oferta Total (Hub)` -> `Oferta Interna Bruta` (por cada energético primario)
+    *   `Oferta Interna Bruta` -> `Coquizadoras y Hornos` (para Carbón mineral)
+    *   `Oferta Interna Bruta` -> `Refinerías y Despuntadoras` (para Petróleo crudo)
+    *   `Oferta Interna Bruta` -> `Plantas de Gas y Fraccionadoras` (para Gas natural y Condensados)
+    *   `Oferta Interna Bruta` -> `Centrales Eléctricas` (para energéticos primarios)
     *   `Oferta Total (Hub)` -> `Exportación` (por cada energético primario)
     *   `Oferta Total (Hub)` -> `Energía No Aprovechada` (por cada energético primario)
     *   `Oferta Total (Hub)` -> `Consumo Propio del Sector` (por cada energético primario)
