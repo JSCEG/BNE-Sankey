@@ -232,23 +232,22 @@
             });
 
             // --- 6. Procesar Flujos de Salida (Oferta Total -> Energía No Aprovechada) ---
-            let totalEnergiaNoAprovechada = 0;
             energiaNoAprovechadaData['Nodos Hijo'].forEach(child => {
                 const flowValue = child[year];
                 if (child.tipo === 'Energía Primaria' && flowValue !== undefined && flowValue !== 0) {
-                    totalEnergiaNoAprovechada += Math.abs(flowValue);
+                    const childName = child['Nodo Hijo'];
+                    const childColor = child.color;
+
+                    source.push(primariosHubIndex);
+                    target.push(energiaNoAprovechadaIndex);
+                    value.push(Math.abs(flowValue));
+                    linkColors.push(
+                        typeof childColor === 'string'
+                            ? childColor
+                            : '#888'
+                    );
                 }
             });
-            if (totalEnergiaNoAprovechada > 0) {
-                source.push(primariosHubIndex);
-                target.push(energiaNoAprovechadaIndex);
-                value.push(totalEnergiaNoAprovechada);
-                linkColors.push(
-                    typeof energiaNoAprovechadaData.color === 'string'
-                        ? energiaNoAprovechadaData.color
-                        : '#888'
-                );
-            }
 
             // --- 7. Procesar Flujos (Oferta Interna Bruta -> Coquizadoras y Hornos) ---
             coquizadorasHornosData['Nodos Hijo'].forEach(child => {
