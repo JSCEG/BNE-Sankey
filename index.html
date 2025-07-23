@@ -91,6 +91,16 @@
             const refineriasDespuntadorasData = energyData.find(p => p['Nodo Padre'] === 'Refinerías y Despuntadoras');
             const plantasGasFraccionadorasData = energyData.find(p => p['Nodo Padre'] === 'Plantas de Gas y Fraccionadoras');
             const centralesElectricasData = energyData.find(p => p['Nodo Padre'] === 'Centrales Eléctricas');
+            const carboelectricaData = energyData.find(p => p['Nodo Padre'] === 'Carboeléctrica');
+            const termicaConvencionalData = energyData.find(p => p['Nodo Padre'] === 'Térmica Convencional');
+            const combustionInternaData = energyData.find(p => p['Nodo Padre'] === 'Combustión Interna');
+            const turbogasData = energyData.find(p => p['Nodo Padre'] === 'Turbogás');
+            const cicloCombinadoData = energyData.find(p => p['Nodo Padre'] === 'Ciclo Combinado');
+            const nucleoelectricaData = energyData.find(p => p['Nodo Padre'] === 'Nucleoeléctrica');
+            const cogeneracionData = energyData.find(p => p['Nodo Padre'] === 'Cogeneración');
+            const geotermicaData = energyData.find(p => p['Nodo Padre'] === 'Geotérmica');
+            const eolicaData = energyData.find(p => p['Nodo Padre'] === 'Eólica');
+            const solarFotovoltaicaData = energyData.find(p => p['Nodo Padre'] === 'Solar Fotovoltaica');
 
             if (!produccionData || !importacionData || !variacionData || !ofertaInternaBrutaData || !exportacionData || !energiaNoAprovechadaData || !consumoPropioData) {
                 console.error('Faltan datos de nodos padres');
@@ -144,6 +154,16 @@
             const refineriasDespuntadorasIndex = addNode(String('Refinerías y Despuntadoras'), refineriasDespuntadorasData.color);
             const plantasGasFraccionadorasIndex = addNode(String('Plantas de Gas y Fraccionadoras'), plantasGasFraccionadorasData.color);
             const centralesElectricasIndex = addNode(String('Centrales Eléctricas'), centralesElectricasData.color);
+            const carboelectricaIndex = addNode(String('Carboeléctrica'), carboelectricaData.color);
+            const termicaConvencionalIndex = addNode(String('Térmica Convencional'), termicaConvencionalData.color);
+            const combustionInternaIndex = addNode(String('Combustión Interna'), combustionInternaData.color);
+            const turbogasIndex = addNode(String('Turbogás'), turbogasData.color);
+            const cicloCombinadoIndex = addNode(String('Ciclo Combinado'), cicloCombinadoData.color);
+            const nucleoelectricaIndex = addNode(String('Nucleoeléctrica'), nucleoelectricaData.color);
+            const cogeneracionIndex = addNode(String('Cogeneración'), cogeneracionData.color);
+            const geotermicaIndex = addNode(String('Geotérmica'), geotermicaData.color);
+            const eolicaIndex = addNode(String('Eólica'), eolicaData.color);
+            const solarFotovoltaicaIndex = addNode(String('Solar Fotovoltaica'), solarFotovoltaicaData.color);
             // --- 2. Procesar Flujos de Entrada (Fuentes -> Tipos de Energía) ---
             const linkSigns = [];
             const processParentNode = (nodeData, parentIndex, allowNegatives = false) => {
@@ -309,72 +329,89 @@
                 }
             });
 
-            // --- 9. Procesar Flujos (Oferta Interna Bruta -> Centrales Eléctricas) ---
-            centralesElectricasData['Nodos Hijo'].forEach(child => {
-                const flowValue = child[year];
-                // Asumimos que los energéticos primarios son los inputs principales de OIB a Centrales Eléctricas
-                if (child.tipo === 'Energía Primaria' && flowValue !== undefined && flowValue !== 0) {
-                    const childColor = child.color;
-                    source.push(ofertaInternaBrutaIndex);
-                    target.push(centralesElectricasIndex);
-                    value.push(Math.abs(flowValue));
-                    linkColors.push(
-                        typeof childColor === 'string'
-                            ? childColor
-                            : '#888'
-                    );
-                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
-                }
-            });
+            // --- 9. Procesar Flujos (Fuentes de Energía -> Tecnologías de Generación) ---
+            const fuelToTechMap = {
+                'Carbón mineral': carboelectricaIndex,
+                'Coque de carbón': carboelectricaIndex,
+                'Combustóleo': termicaConvencionalIndex,
+                'Diesel': combustionInternaIndex,
+                'Gas natural': cicloCombinadoIndex,
+                'Gas natural seco': cicloCombinadoIndex, // Simplificación: todo el gas seco va a ciclo combinado
+                'Energía Nuclear': nucleoelectricaIndex,
+                'Geoenergía': geotermicaIndex,
+                'Energía eólica': eolicaIndex,
+                'Energía solar': solarFotovoltaicaIndex,
+                'Bagazo de caña': cogeneracionIndex,
+                'Biogás': cogeneracionIndex,
+                'Leña': termicaConvencionalIndex,
+                // Nota: Turbogás y Térmica Convencional también pueden usar Gas Natural Seco,
+                // pero los datos no especifican la distribución.
+            };
 
-            // --- 10. Procesar Flujos (Refinerías y Despuntadoras -> Centrales Eléctricas) ---
-            refineriasDespuntadorasData['Nodos Hijo'].forEach(child => {
-                const flowValue = child[year];
-                if ((child['Nodo Hijo'] === 'Diesel' || child['Nodo Hijo'] === 'Combustóleo' || child['Nodo Hijo'] === 'Gas natural seco') && child.tipo === 'Energía Secundaria' && flowValue !== undefined && flowValue !== 0) {
-                    const childColor = child.color;
-                    source.push(refineriasDespuntadorasIndex);
-                    target.push(centralesElectricasIndex);
-                    value.push(Math.abs(flowValue));
-                    linkColors.push(
-                        typeof childColor === 'string'
-                            ? childColor
-                            : '#888'
-                    );
-                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
-                }
-            });
+            if (centralesElectricasData && centralesElectricasData['Nodos Hijo']) {
+                centralesElectricasData['Nodos Hijo'].forEach(fuel => {
+                    const flowValue = fuel[year];
+                    if (flowValue !== undefined && flowValue !== 0) {
+                        const fuelName = fuel['Nodo Hijo'];
+                        const fuelColor = fuel.color;
+                        const targetIndex = fuelToTechMap[fuelName];
 
-            // --- 11. Procesar Flujos (Plantas de Gas y Fraccionadoras -> Centrales Eléctricas) ---
-            plantasGasFraccionadorasData['Nodos Hijo'].forEach(child => {
-                const flowValue = child[year];
-                if (child['Nodo Hijo'] === 'Gas natural seco' && child.tipo === 'Energía Secundaria' && flowValue !== undefined && flowValue !== 0) {
-                    const childColor = child.color;
-                    source.push(plantasGasFraccionadorasIndex);
-                    target.push(centralesElectricasIndex);
-                    value.push(Math.abs(flowValue));
-                    linkColors.push(
-                        typeof childColor === 'string'
-                            ? childColor
-                            : '#888'
-                    );
-                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
-                }
-            });
+                        if (targetIndex !== undefined) {
+                            let sourceIndex;
+                            if (fuel.tipo === 'Energía Primaria') {
+                                sourceIndex = ofertaInternaBrutaIndex;
+                            } else { // Energía Secundaria
+                                if (fuelName === 'Coque de carbón') {
+                                    sourceIndex = coquizadorasHornosIndex;
+                                } else if (fuelName === 'Gas natural seco') {
+                                    // Simplificación: Asumimos que el gas seco para generación viene de plantas de gas
+                                    // si el dato existe, si no, de refinerías.
+                                    sourceIndex = plantasGasFraccionadorasData ? plantasGasFraccionadorasIndex : refineriasDespuntadorasIndex;
+                                } else {
+                                    sourceIndex = refineriasDespuntadorasIndex;
+                                }
+                            }
 
-            // --- 12. Procesar Flujos (Coquizadoras y Hornos -> Centrales Eléctricas) ---
-            coquizadorasHornosData['Nodos Hijo'].forEach(child => {
-                const flowValue = child[year];
-                if (child['Nodo Hijo'] === 'Coque de carbón' && child.tipo === 'Energía Secundaria' && flowValue !== undefined && flowValue !== 0) {
-                    const childColor = child.color;
-                    source.push(coquizadorasHornosIndex);
-                    target.push(centralesElectricasIndex);
-                    value.push(Math.abs(flowValue));
-                    linkColors.push(
-                        typeof childColor === 'string'
-                            ? childColor
-                            : '#888'
-                    );
-                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
+                            if (sourceIndex !== undefined) {
+                                source.push(sourceIndex);
+                                target.push(targetIndex);
+                                value.push(Math.abs(flowValue));
+                                linkColors.push(typeof fuelColor === 'string' ? fuelColor : '#888');
+                                linkCustomdata.push(`${fuelName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
+                            }
+                        }
+                    }
+                });
+            }
+
+            // --- 10. Procesar Flujos (Tecnologías de Generación -> Centrales Eléctricas) ---
+            const generationNodes = [
+                { data: carboelectricaData, index: carboelectricaIndex, name: 'Carboeléctrica' },
+                { data: termicaConvencionalData, index: termicaConvencionalIndex, name: 'Térmica Convencional' },
+                { data: combustionInternaData, index: combustionInternaIndex, name: 'Combustión Interna' },
+                { data: turbogasData, index: turbogasIndex, name: 'Turbogás' },
+                { data: cicloCombinadoData, index: cicloCombinadoIndex, name: 'Ciclo Combinado' },
+                { data: nucleoelectricaData, index: nucleoelectricaIndex, name: 'Nucleoeléctrica' },
+                { data: cogeneracionData, index: cogeneracionIndex, name: 'Cogeneración' },
+                { data: geotermicaData, index: geotermicaIndex, name: 'Geotérmica' },
+                { data: eolicaData, index: eolicaIndex, name: 'Eólica' },
+                { data: solarFotovoltaicaData, index: solarFotovoltaicaIndex, name: 'Solar Fotovoltaica' }
+            ];
+
+            generationNodes.forEach(genNode => {
+                if (genNode.data && genNode.data['Nodos Hijo']) {
+                    genNode.data['Nodos Hijo'].forEach(child => {
+                        if (child['Nodo Hijo'] === 'Energía eléctrica') {
+                            const flowValue = child[year];
+                            if (flowValue !== undefined && flowValue !== 0) {
+                                source.push(genNode.index);
+                                target.push(centralesElectricasIndex);
+                                value.push(Math.abs(flowValue));
+                                linkColors.push(typeof child.color === 'string' ? child.color : '#888');
+                                linkCustomdata.push(`Producción de ${genNode.name}: ${Math.abs(flowValue).toLocaleString()} PJ`);
+                            }
+                        }
+                    });
                 }
             });
 
@@ -445,9 +482,39 @@
                 } else if (label === 'Coquizadoras y Hornos') {
                     nodeX[i] = 0.5; // A la derecha de Oferta Interna Bruta
                     nodeY[i] = 0.4; // Posición vertical
+                } else if (label === 'Carboeléctrica') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.05;
+                } else if (label === 'Térmica Convencional') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.15;
+                } else if (label === 'Combustión Interna') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.25;
+                } else if (label === 'Turbogás') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.35;
+                } else if (label === 'Ciclo Combinado') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.45;
+                } else if (label === 'Nucleoeléctrica') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.55;
+                } else if (label === 'Cogeneración') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.65;
+                } else if (label === 'Geotérmica') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.75;
+                } else if (label === 'Eólica') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.85;
+                } else if (label === 'Solar Fotovoltaica') {
+                    nodeX[i] = 0.6;
+                    nodeY[i] = 0.95;
                 } else if (label === 'Centrales Eléctricas') {
-                    nodeX[i] = 0.6; // Más a la derecha
-                    nodeY[i] = 0.03; // Un poco más abajo
+                    nodeX[i] = 0.8; // Punto de convergencia final
+                    nodeY[i] = 0.5; // Centrado verticalmente
                 } else if (label === 'Exportación') {
                     nodeX[i] = 0.4; // Posición horizontal después del hub
                     nodeY[i] = 0.7; // Posición vertical
