@@ -214,20 +214,29 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
 
 * **Mapeo de Combustibles a Tecnologías de Generación (`fuelToTechMap`):**
 
-  Para dirigir los flujos de energía correctamente, se utiliza un objeto en `index.html` que mapea cada tipo de combustible a la tecnología de generación que lo utiliza. A continuación se muestra una simplificación de este mapeo:
+  Para dirigir los flujos de energía correctamente, se utiliza un objeto en `index.html` que mapea cada tipo de combustible a una o varias tecnologías de generación. A continuación se muestra la estructura actualizada de este mapeo:
 
   ```javascript
   const fuelToTechMap = {
-      'Carbón mineral': carboelectricaIndex,
-      'Coque de carbón': carboelectricaIndex,
-      'Combustóleo': termicaConvencionalIndex,
-      'Diesel': combustionInternaIndex,
-      'Gas natural': cicloCombinadoIndex,
-      'Gas natural seco': cicloCombinadoIndex,
-      'Energía Nuclear': nucleoelectricaIndex,
+      'Carbón mineral': [carboelectricaIndex],
+      'Coque de carbón': [carboelectricaIndex],
+      'Combustóleo': [termicaConvencionalIndex],
+      'Diesel': [combustionInternaIndex],
+      'Gas natural': [cicloCombinadoIndex],
+      'Gas natural seco': [cicloCombinadoIndex, termicaConvencionalIndex], // Ejemplo de mapeo uno a muchos
+      'Energía Nuclear': [nucleoelectricaIndex],
+      'Geoenergía': [geotermicaIndex],
+      'Energía eólica': [eolicaIndex],
+      'Energía solar': [solarFotovoltaicaIndex],
+      'Bagazo de caña': [termicaConvencionalIndex],
+      'Biogás': [termicaConvencionalIndex],
+      'Leña': [termicaConvencionalIndex],
       // ... y así sucesivamente para los demás combustibles
   };
   ```
+
+  **Manejo de Flujos Uno a Muchos:**
+  La lógica de procesamiento de flujos en `index.html` ha sido actualizada para iterar sobre el array de `targetIndex` en `fuelToTechMap`. Esto permite que un solo energético pueda alimentar a múltiples tecnologías de generación, creando un enlace para cada destino especificado en el array. La determinación del nodo de origen (`sourceIndex`) sigue basándose en si el energético es de tipo 'Energía Primaria' (desde 'Oferta Interna Bruta') o 'Energía Secundaria' (desde los nodos de transformación correspondientes como Refinerías, Plantas de Gas o Coquizadoras).
 
 * **Reglas de Colores:**
 

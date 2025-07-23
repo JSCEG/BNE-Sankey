@@ -331,19 +331,19 @@
 
             // --- 9. Procesar Flujos (Fuentes de Energía -> Tecnologías de Generación) ---
             const fuelToTechMap = {
-                'Carbón mineral': carboelectricaIndex,
-                'Coque de carbón': carboelectricaIndex,
-                'Combustóleo': termicaConvencionalIndex,
-                'Diesel': combustionInternaIndex,
-                'Gas natural': cicloCombinadoIndex,
-                'Gas natural seco': cicloCombinadoIndex, // Simplificación: todo el gas seco va a ciclo combinado
-                'Energía Nuclear': nucleoelectricaIndex,
-                'Geoenergía': geotermicaIndex,
-                'Energía eólica': eolicaIndex,
-                'Energía solar': solarFotovoltaicaIndex,
-                'Bagazo de caña': cogeneracionIndex,
-                'Biogás': cogeneracionIndex,
-                'Leña': termicaConvencionalIndex,
+                'Carbón mineral': [carboelectricaIndex],
+                'Coque de carbón': [carboelectricaIndex],
+                'Combustóleo': [termicaConvencionalIndex],
+                'Diesel': [combustionInternaIndex],
+                'Gas natural': [cicloCombinadoIndex],
+                'Gas natural seco': [cicloCombinadoIndex, termicaConvencionalIndex], // Ahora puede ir a Ciclo Combinado y Térmica Convencional
+                'Energía Nuclear': [nucleoelectricaIndex],
+                'Geoenergía': [geotermicaIndex],
+                'Energía eólica': [eolicaIndex],
+                'Energía solar': [solarFotovoltaicaIndex],
+                'Bagazo de caña': [termicaConvencionalIndex],
+                'Biogás': [termicaConvencionalIndex],
+                'Leña': [termicaConvencionalIndex],
                 // Nota: Turbogás y Térmica Convencional también pueden usar Gas Natural Seco,
                 // pero los datos no especifican la distribución.
             };
@@ -354,31 +354,33 @@
                     if (flowValue !== undefined && flowValue !== 0) {
                         const fuelName = fuel['Nodo Hijo'];
                         const fuelColor = fuel.color;
-                        const targetIndex = fuelToTechMap[fuelName];
+                        const targetIndices = fuelToTechMap[fuelName];
 
-                        if (targetIndex !== undefined) {
-                            let sourceIndex;
-                            if (fuel.tipo === 'Energía Primaria') {
-                                sourceIndex = ofertaInternaBrutaIndex;
-                            } else { // Energía Secundaria
-                                if (fuelName === 'Coque de carbón') {
-                                    sourceIndex = coquizadorasHornosIndex;
-                                } else if (fuelName === 'Gas natural seco') {
-                                    // Simplificación: Asumimos que el gas seco para generación viene de plantas de gas
-                                    // si el dato existe, si no, de refinerías.
-                                    sourceIndex = plantasGasFraccionadorasData ? plantasGasFraccionadorasIndex : refineriasDespuntadorasIndex;
-                                } else {
-                                    sourceIndex = refineriasDespuntadorasIndex;
+                        if (targetIndices && targetIndices.length > 0) {
+                            targetIndices.forEach(targetIndex => {
+                                let sourceIndex;
+                                if (fuel.tipo === 'Energía Primaria') {
+                                    sourceIndex = ofertaInternaBrutaIndex;
+                                } else { // Energía Secundaria
+                                    if (fuelName === 'Coque de carbón') {
+                                        sourceIndex = coquizadorasHornosIndex;
+                                    } else if (fuelName === 'Gas natural seco') {
+                                        // Simplificación: Asumimos que el gas seco para generación viene de plantas de gas
+                                        // si el dato existe, si no, de refinerías.
+                                        sourceIndex = plantasGasFraccionadorasData ? plantasGasFraccionadorasIndex : refineriasDespuntadorasIndex;
+                                    } else {
+                                        sourceIndex = refineriasDespuntadorasIndex;
+                                    }
                                 }
-                            }
 
-                            if (sourceIndex !== undefined) {
-                                source.push(sourceIndex);
-                                target.push(targetIndex);
-                                value.push(Math.abs(flowValue));
-                                linkColors.push(typeof fuelColor === 'string' ? fuelColor : '#888');
-                                linkCustomdata.push(`${fuelName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
-                            }
+                                if (sourceIndex !== undefined) {
+                                    source.push(sourceIndex);
+                                    target.push(targetIndex);
+                                    value.push(Math.abs(flowValue));
+                                    linkColors.push(typeof fuelColor === 'string' ? fuelColor : '#888');
+                                    linkCustomdata.push(`${fuelName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
+                                }
+                            });
                         }
                     }
                 });
