@@ -46,6 +46,7 @@ Para asegurar una visualización clara y evitar solapamientos, se han definido l
 
 ```javascript
             labels.forEach((label, i) => {
+
                 if (label === 'Importación de energéticos primarios') {
                     nodeX[i] = 0.01;
                     nodeY[i] = 0.1;
@@ -84,6 +85,17 @@ Para asegurar una visualización clara y evitar solapamientos, se han definido l
                     nodeY[i] = 0.03;
                 }
             });
+```
+
+#### Ajuste del Tamaño de Fuente de las Etiquetas de Nodos
+
+Para mejorar la legibilidad y permitir la inclusión de valores, el tamaño de la fuente de las etiquetas de los nodos se ha ajustado a `6` en la configuración del nodo dentro de la función `updateSankey`:
+
+```javascript
+                node: {
+                    // ... otras propiedades ...
+                    font: { size: 6 } // Tamaño de fuente de las etiquetas de los nodos
+                },
 ```
 
 ## Nodos Padre
@@ -206,6 +218,68 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
   * Los valores de flujo se obtienen por año (ej. `2010`, `2011`).
   * El `id_hijo` se utiliza para ordenar los nodos hijo dentro de cada nodo padre.
   * Los valores negativos en `Variación de Inventarios` se manejan con `Math.abs()` para el valor del enlace, pero se suman/restan al `primaryEnergyTotals` según su signo.
+
+#### Creación de Flujos y Popups en `index.html`
+
+Para asegurar la consistencia en la visualización de datos, es crucial seguir un patrón específico al agregar nuevos flujos al diagrama de Sankey. Cada flujo (o `link`) debe estar acompañado de un popup informativo que muestre el nombre del energético y su valor en petajoules (PJ).
+
+A continuación, se describe el proceso para añadir un nuevo flujo en la función `updateSankey` de `index.html`:
+
+1.  **Inicialización de Arrays:**
+    Asegúrate de que los siguientes arrays estén inicializados al principio de la función `updateSankey`:
+
+    ```javascript
+    const source = [];
+    const target = [];
+    const value = [];
+    const linkColors = [];
+    const linkCustomdata = [];
+    ```
+
+2.  **Poblar los Arrays de Flujo:**
+    Cuando proceses los datos para crear un nuevo flujo, debes añadir la información correspondiente a cada uno de los arrays. Es fundamental que el valor del flujo se trate con `Math.abs()` para asegurar que sea siempre positivo, y que el texto del popup se añada al array `linkCustomdata`.
+
+    **Ejemplo de Implementación:**
+
+    ```javascript
+    // Suponiendo que 'child' es un nodo hijo con los datos del flujo
+    const flowValue = child[year];
+    const childName = child['Nodo Hijo'];
+    const childColor = child.color;
+    const parentIndex = nodeMap.get('Nombre del Nodo Padre');
+    const childIndex = nodeMap.get(childName);
+
+    if (flowValue !== undefined && flowValue !== 0) {
+        source.push(parentIndex);
+        target.push(childIndex);
+        value.push(Math.abs(flowValue));
+        linkColors.push(typeof childColor === 'string' ? childColor : '#888');
+        linkCustomdata.push(`${childName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
+    }
+    ```
+
+3.  **Configuración del `link` en Plotly:**
+    Finalmente, al definir el objeto `data` para el gráfico de Plotly, asegúrate de que la propiedad `link` esté configurada para utilizar los arrays que has poblado. El `hovertemplate` se encargará de mostrar el popup con la información de `linkCustomdata`.
+
+    ```javascript
+    const data = {
+        type: "sankey",
+        orientation: "h",
+        node: {
+            // ... propiedades del nodo
+        },
+        link: {
+            source: source,
+            target: target,
+            value: value,
+            color: linkColors,
+            customdata: linkCustomdata,
+            hovertemplate: '%{customdata}<extra></extra>'
+        }
+    };
+    ```
+
+Al seguir estos pasos, cualquier nuevo flujo que se añada al diagrama de Sankey tendrá un popup informativo coherente con el resto de la visualización.
 
 ### 4. Implementar los Cambios
 

@@ -107,6 +107,7 @@
             const target = [];
             const value = [];
             const linkColors = [];
+            const linkCustomdata = [];
 
             function addNode(name, color) {
                 // Unificar el nodo 'Carbón mineral' para todos los flujos
@@ -167,6 +168,7 @@
                                 ? childColor
                                 : '#888'
                         );
+                        linkCustomdata.push(`${childName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                         linkSigns.push(flowValue > 0 ? '+' : '-');
                         // Sumar o restar según el signo
                         if (allowNegatives && flowValue < 0) {
@@ -193,6 +195,7 @@
                         ? energyColor
                         : '#888'
                 );
+                linkCustomdata.push(`${energyName}: ${Math.abs(totalValue).toLocaleString()} PJ`);
             }
 
             // --- 4. Procesar Flujos (Oferta Total -> Oferta Interna Bruta) ---
@@ -210,6 +213,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${childName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -228,6 +232,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${childName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -246,6 +251,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${childName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -263,6 +269,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -280,6 +287,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -297,6 +305,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -314,6 +323,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -330,6 +340,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -346,6 +357,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -362,6 +374,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${child['Nodo Hijo']}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -381,6 +394,7 @@
                             ? childColor
                             : '#888'
                     );
+                    linkCustomdata.push(`${childName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                 }
             });
 
@@ -477,9 +491,10 @@
                     hovertemplate: customNodeHover,
                     customdata: customNodeData,
                     x: nodeX,
-                    y: nodeY
+                    y: nodeY,
+                    font: { size: 6 } // Reducir el tamaño de la fuente aún más
                 },
-                link: { source: source, target: target, value: value, color: linkColors, hovertemplate: customLinkHover }
+                link: { source: source, target: target, value: value, color: linkColors, customdata: linkCustomdata, hovertemplate: '%{customdata}<extra></extra>' }
             };
 
             const layout = { title: `Flujo de Fuentes a Oferta Total y Salidas - ${year} (Valores en PJ)`, font: { size: 12 } };
