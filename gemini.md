@@ -27,6 +27,12 @@ Con el contexto recopilado, formula un plan detallado. Esto puede implicar:
 - **Pasos Detallados:** Desglosa la tarea en pasos más pequeños y manejables.
 - **Verificación:** Piensa en cómo se verificará la solución (ej. pruebas unitarias, pruebas de integración, linting).
 
+#### Criterios Específicos del Proyecto:
+- **Estructura de Nodos:** Cada nodo padre tiene la misma estructura de nodos hijos.
+- **Identificación de Nodos Hijos:** Cada nodo hijo tiene un color y un `id_hijo` únicos.
+- **Reutilización de Nodos Hijos:** Los nodos hijos se repiten en cada nodo padre con diferentes valores.
+- **Orden de Listado:** Se utiliza un `id_orden` para listar los nodos hijos en un orden específico.
+
 ### 4. Implementar los Cambios
 Utiliza las herramientas disponibles para aplicar los cambios según el plan:
 - **Modificación de Archivos:** Usa `replace` para cambios específicos en el contenido de los archivos o `write_file` para crear nuevos archivos o sobrescribir contenido.

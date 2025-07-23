@@ -210,18 +210,16 @@
                 if (child.tipo === 'Energía Primaria' && flowValue !== undefined && flowValue !== 0) {
                     const childName = child['Nodo Hijo'];
                     const childColor = child.color;
-                    const energyIndex = nodeMap.get(childName); // Obtener el índice del nodo de energético primario
+                    // const energyIndex = nodeMap.get(childName); // Obtener el índice del nodo de energético primario
 
-                    if (energyIndex !== undefined) {
-                        source.push(energyIndex);
-                        target.push(energiaNoAprovechadaIndex);
-                        value.push(Math.abs(flowValue));
-                        linkColors.push(
-                            typeof childColor === 'string'
-                                ? childColor
-                                : '#888'
-                        );
-                    }
+                    source.push(primariosHubIndex);
+                    target.push(energiaNoAprovechadaIndex);
+                    value.push(Math.abs(flowValue));
+                    linkColors.push(
+                        typeof childColor === 'string'
+                            ? childColor
+                            : '#888'
+                    );
                 }
             });
             // --- 5. Procesar Flujos de Salida (Oferta Total -> Consumo Propio del Sector) ---
@@ -230,18 +228,16 @@
                 if (child.tipo === 'Energía Primaria' && flowValue !== undefined && flowValue !== 0) {
                     const childName = child['Nodo Hijo'];
                     const childColor = child.color;
-                    const energyIndex = nodeMap.get(childName); // Obtener el índice del nodo de energético primario
+                    // const energyIndex = nodeMap.get(childName); // Obtener el índice del nodo de energético primario
 
-                    if (energyIndex !== undefined) {
-                        source.push(energyIndex);
-                        target.push(consumoPropioIndex);
-                        value.push(Math.abs(flowValue));
-                        linkColors.push(
-                            typeof childColor === 'string'
-                                ? childColor
-                                : '#888'
-                        );
-                    }
+                    source.push(primariosHubIndex);
+                    target.push(consumoPropioIndex);
+                    value.push(Math.abs(flowValue));
+                    linkColors.push(
+                        typeof childColor === 'string'
+                            ? childColor
+                            : '#888'
+                    );
                 }
             });
 
