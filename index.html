@@ -193,16 +193,14 @@
                     const childColor = child.color;
                     const energyIndex = nodeMap.get(childName); // Obtener el índice del nodo de energético primario
 
-                    if (energyIndex !== undefined) {
-                        source.push(energyIndex);
-                        target.push(exportacionIndex);
-                        value.push(Math.abs(flowValue));
-                        linkColors.push(
-                            typeof childColor === 'string'
-                                ? childColor
-                                : '#888'
-                        );
-                    }
+                    source.push(primariosHubIndex);
+                    target.push(exportacionIndex);
+                    value.push(Math.abs(flowValue));
+                    linkColors.push(
+                        typeof childColor === 'string'
+                            ? childColor
+                            : '#888'
+                    );
                 }
             });
             energiaNoAprovechadaData['Nodos Hijo'].forEach(child => {
