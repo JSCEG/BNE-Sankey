@@ -143,7 +143,6 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
 * Transporte (id_padre: 39)
 * Producción bruta energía secundaria (id_padre: 40)
 
-
   ### **Energéticos Primarios**
 
 
@@ -159,8 +158,7 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
   10. Bagazo de caña (id_hijo: 10)
   11. Leña (id_hijo: 11)
   12. Biogás (id_hijo: 12)
-  13. Otros energéticos (id_hijo: 20)
-  14. Energía Hidráulica (id_hijo: 23)
+  13. Energía Hidráulica (id_hijo: 23)
 
   ---
 
@@ -175,6 +173,7 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
   7. Combustóleo (id_hijo: 19)
   8. Gas natural seco (id_hijo: 21)
   9. Energía eléctrica (id_hijo: 22)
+  10. Otros energéticos (id_hijo: 20)
 
 #### Relaciones y Flujos de Nodos (Detectados en `index.html` y `datos_energia_completo.json`):
 
@@ -193,26 +192,25 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
   * `Exportación`
   * `Energía No Aprovechada`
   * `Consumo Propio del Sector`
-
 * **Flujos Principales:**
 
-  1.  **`Producción`, `Importación`, `Variación de Inventarios` -> `Oferta Total (Hub)`:**
-      *   Los energéticos primarios fluyen desde sus fuentes originales hacia un nodo centralizador (`Oferta Total (Hub)`).
+  1. **`Producción`, `Importación`, `Variación de Inventarios` -> `Oferta Total (Hub)`:**
 
-  2.  **`Oferta Total (Hub)` -> `Oferta Interna Bruta`, `Exportación`, etc.:**
-      *   Desde el hub, la energía se distribuye a la `Oferta Interna Bruta` y a otros nodos de salida como `Exportación`.
+     * Los energéticos primarios fluyen desde sus fuentes originales hacia un nodo centralizador (`Oferta Total (Hub)`).
+  2. **`Oferta Total (Hub)` -> `Oferta Interna Bruta`, `Exportación`, etc.:**
 
-  3.  **`Oferta Interna Bruta` -> Centros de Transformación (`Refinerías`, `Coquizadoras`, `Plantas de Gas`):**
-      *   Los energéticos primarios se envían a los centros de transformación correspondientes (ej. `Petróleo crudo` a `Refinerías`).
+     * Desde el hub, la energía se distribuye a la `Oferta Interna Bruta` y a otros nodos de salida como `Exportación`.
+  3. **`Oferta Interna Bruta` -> Centros de Transformación (`Refinerías`, `Coquizadoras`, `Plantas de Gas`):**
 
-  4.  **Fuentes de Energía -> Tecnologías de Generación:**
-      *   Los energéticos (tanto primarios de `Oferta Interna Bruta` como secundarios de los centros de transformación) fluyen hacia los nodos de tecnología de generación que los consumen.
-      *   La lógica para esta distribución se basa en un mapeo de combustibles a tecnologías (ver `fuelToTechMap` en `index.html`).
-      *   **Exclusión de Energía Eléctrica como Entrada:** Se excluye explícitamente la 'Energía eléctrica' como energético de entrada para las tecnologías de generación (Carboeléctrica, Térmica Convencional, Combustión Interna, Turbogás, Ciclo Combinado, Nucleoeléctrica, Cogeneración, Geotérmica, Eólica, Solar Fotovoltaica), ya que esta es una salida de las centrales y no un combustible que las alimente.
+     * Los energéticos primarios se envían a los centros de transformación correspondientes (ej. `Petróleo crudo` a `Refinerías`).
+  4. **Fuentes de Energía -> Tecnologías de Generación:**
 
-  5.  **Tecnologías de Generación -> `Centrales Eléctricas`:**
-      *   Cada nodo de tecnología de generación suma la energía que recibe y la convierte en `Energía eléctrica`, que luego fluye hacia el nodo `Centrales Eléctricas`.
+     * Los energéticos (tanto primarios de `Oferta Interna Bruta` como secundarios de los centros de transformación) fluyen hacia los nodos de tecnología de generación que los consumen.
+     * La lógica para esta distribución se basa en un mapeo de combustibles a tecnologías (ver `fuelToTechMap` en `index.html`).
+     * **Exclusión de Energía Eléctrica como Entrada:** Se excluye explícitamente la 'Energía eléctrica' como energético de entrada para las tecnologías de generación (Carboeléctrica, Térmica Convencional, Combustión Interna, Turbogás, Ciclo Combinado, Nucleoeléctrica, Cogeneración, Geotérmica, Eólica, Solar Fotovoltaica), ya que esta es una salida de las centrales y no un combustible que las alimente.
+  5. **Tecnologías de Generación -> `Centrales Eléctricas`:**
 
+     * Cada nodo de tecnología de generación suma la energía que recibe y la convierte en `Energía eléctrica`, que luego fluye hacia el nodo `Centrales Eléctricas`.
 * **Mapeo de Combustibles a Tecnologías de Generación (`fuelToTechMap`):**
 
   Para dirigir los flujos de energía correctamente, se utiliza un objeto en `index.html` que mapea cada tipo de combustible a una o varias tecnologías de generación. A continuación se muestra la estructura actualizada de este mapeo:
@@ -243,7 +241,6 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
 
   **Escala Logarítmica para el Grosor de los Enlaces:**
   Para mejorar la visualización de los flujos, especialmente cuando hay una gran diferencia entre los valores de los enlaces, se ha implementado una escala logarítmica. Los valores de los enlaces ahora se transforman utilizando `Math.log10(valor + 1)` antes de ser utilizados para determinar el grosor del enlace. Esto hace que los enlaces con valores pequeños sean más visibles sin distorsionar la proporcionalidad de los flujos más grandes.
-
 * **Reglas de Colores:**
 
   * Los colores de los nodos padre y los enlaces se toman directamente de la propiedad `color` definida en cada "Nodo Padre" y "Nodo Hijo" en `datos_energia_completo.json`.
@@ -253,7 +250,7 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
   * Los "Nodos Hijo" se identifican por `Nodo Hijo` (nombre), `tipo` (Energía Primaria/Secundaria), `id_hijo` y `color`.
   * Los valores de flujo se obtienen por año (ej. `2010`, `2011`).
   * El `id_hijo` se utiliza para ordenar los nodos hijo dentro de cada nodo padre.
-  * Los valores negativos en `Variación de Inventarios` se manejan con `Math.abs()` para el valor del enlace, pero se suman/restan al `primaryEnergyTotals` según su signo.
+  * Los valores negativos en `Variación de Inventarios` se manejan con `Math.abs()` para el valor del enlace, pero se suman/restan al `primaryEnergyTotals` según su signo. En los popups de los enlaces, los valores negativos mantienen su signo para reflejar la disminución de inventario.
 
 #### Creación de Flujos y Popups en `index.html`
 
@@ -261,61 +258,94 @@ Para asegurar la consistencia en la visualización de datos, es crucial seguir u
 
 A continuación, se describe el proceso para añadir un nuevo flujo en la función `updateSankey` de `index.html`:
 
-1.  **Inicialización de Arrays:**
-    Asegúrate de que los siguientes arrays estén inicializados al principio de la función `updateSankey`:
+1. **Inicialización de Arrays:**
+   Asegúrate de que los siguientes arrays estén inicializados al principio de la función `updateSankey`:
 
-    ```javascript
-    const source = [];
-    const target = [];
-    const value = [];
-    const linkColors = [];
-    const linkCustomdata = [];
-    ```
+   ```javascript
+   const source = [];
+   const target = [];
+   const value = [];
+   const linkColors = [];
+   const linkCustomdata = [];
+   ```
+2. **Poblar los Arrays de Flujo:**
+   Cuando proceses los datos para crear un nuevo flujo, debes añadir la información correspondiente a cada uno de los arrays. Es fundamental que el valor del flujo se trate con `Math.abs()` para asegurar que sea siempre positivo, y que el texto del popup se añada al array `linkCustomdata`.
 
-2.  **Poblar los Arrays de Flujo:**
-    Cuando proceses los datos para crear un nuevo flujo, debes añadir la información correspondiente a cada uno de los arrays. Es fundamental que el valor del flujo se trate con `Math.abs()` para asegurar que sea siempre positivo, y que el texto del popup se añada al array `linkCustomdata`.
+   **Ejemplo de Implementación:**
 
-    **Ejemplo de Implementación:**
+   ```javascript
+   // Suponiendo que 'child' es un nodo hijo con los datos del flujo
+   const flowValue = child[year];
+   const childName = child['Nodo Hijo'];
+   const childColor = child.color;
+   const parentIndex = nodeMap.get('Nombre del Nodo Padre');
+   const childIndex = nodeMap.get(childName);
 
-    ```javascript
-    // Suponiendo que 'child' es un nodo hijo con los datos del flujo
-    const flowValue = child[year];
-    const childName = child['Nodo Hijo'];
-    const childColor = child.color;
-    const parentIndex = nodeMap.get('Nombre del Nodo Padre');
-    const childIndex = nodeMap.get(childName);
+   if (flowValue !== undefined && flowValue !== 0) {
+       source.push(parentIndex);
+       target.push(childIndex);
+       value.push(Math.abs(flowValue));
+       linkColors.push(typeof childColor === 'string' ? childColor : '#888');
+       // Para Variación de Inventarios, mantenemos el signo original en el popup
+       if (parentIndex === variacionIndex) {
+           linkCustomdata.push(`${childName}: ${flowValue.toLocaleString()} PJ`);
+       } else {
+           linkCustomdata.push(`${childName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
+       }
+   }
+   ```
+3. **Configuración del `link` en Plotly:**
+   Finalmente, al definir el objeto `data` para el gráfico de Plotly, asegúrate de que la propiedad `link` esté configurada para utilizar los arrays que has poblado. El `hovertemplate` se encargará de mostrar el popup con la información de `linkCustomdata`.
 
-    if (flowValue !== undefined && flowValue !== 0) {
-        source.push(parentIndex);
-        target.push(childIndex);
-        value.push(Math.abs(flowValue));
-        linkColors.push(typeof childColor === 'string' ? childColor : '#888');
-        linkCustomdata.push(`${childName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
-    }
-    ```
-
-3.  **Configuración del `link` en Plotly:**
-    Finalmente, al definir el objeto `data` para el gráfico de Plotly, asegúrate de que la propiedad `link` esté configurada para utilizar los arrays que has poblado. El `hovertemplate` se encargará de mostrar el popup con la información de `linkCustomdata`.
-
-    ```javascript
-    const data = {
-        type: "sankey",
-        orientation: "h",
-        node: {
-            // ... propiedades del nodo
-        },
-        link: {
-            source: source,
-            target: target,
-            value: value,
-            color: linkColors,
-            customdata: linkCustomdata,
-            hovertemplate: '%{customdata}<extra></extra>'
-        }
-    };
-    ```
+   ```javascript
+   const data = {
+       type: "sankey",
+       orientation: "h",
+       node: {
+           // ... propiedades del nodo
+       },
+       link: {
+           source: source,
+           target: target,
+           value: value,
+           color: linkColors,
+           customdata: linkCustomdata,
+           hovertemplate: '%{customdata}<extra></extra>'
+       }
+   };
+   ```
 
 Al seguir estos pasos, cualquier nuevo flujo que se añada al diagrama de Sankey tendrá un popup informativo coherente con el resto de la visualización.
+
+#### Configuración de Popups (Hover) en Nodos y Enlaces
+
+Para mejorar la claridad de la información presentada en el diagrama, se ha personalizado el contenido de los popups que aparecen al pasar el cursor sobre los nodos y los enlaces.
+
+*   **Nodos de Energéticos Primarios:**
+
+  *   **Contenido:** Muestran un desglose de los valores que reciben de `Importación`, `Variación de Inventarios` y `Producción`, junto con la suma total.
+  *   **Implementación:** Se utiliza un mapa (`primaryEnergyBreakdown`) para almacenar los valores por separado para cada fuente. Luego, se construye una cadena de texto con formato HTML en `customdata` para el nodo y se muestra usando la propiedad `hovertemplate` del nodo, omitiendo el valor predeterminado de Plotly.
+
+*   **Nodo Producción:**
+    *   **Contenido:** Muestra la suma total de la producción de todos los energéticos primarios.
+    *   **Implementación:** Se itera sobre el `primaryEnergyBreakdown` para sumar los valores de producción de cada energético y se muestra el total en el popup del nodo.
+* **Nodo Oferta Total (Hub):**
+
+  * **Contenido:** Muestra la suma total de todos los flujos de energéticos primarios que recibe.
+  * **Implementación:** Se calcula la suma de todos los valores en el mapa `primaryEnergyTotals`. Luego, se crea un texto personalizado para el popup y se asigna al `customdata` del nodo.
+* **Nodo Variación de inventarios de Energéticos primarios:**
+
+  * **Contenido:** Muestra un desglose de la suma de valores positivos y negativos que componen la variación total.
+  * **Implementación:** Se calculan las sumas `variacionPositiva` y `variacionNegativa` iterando sobre los hijos del nodo. Esta información se usa para construir el `customdata` del popup.
+  * **Nota Histórica:** Se corrigió un error donde se usaba la variable `negativa` en lugar de `variacionNegativa`, lo que causaba un fallo en la carga del gráfico.
+* **Enlaces de Energéticos Primarios a Oferta Total (Hub):**
+
+  * **Contenido:** Muestran únicamente el valor total del flujo, sin el desglose o el nombre del energético.
+  * **Implementación:** Al crear el enlace, el `linkCustomdata` se puebla con una cadena de texto que solo contiene el `Total:` y el valor del flujo.
+* **Enlaces de Variación de Inventarios:**
+
+  * **Contenido:** Muestran el valor del flujo manteniendo el signo negativo si corresponde, para indicar una disminución en el inventario.
+  * **Implementación:** Se realiza una comprobación en la función `processParentNode`. Si el nodo padre es `Variación de inventarios de Energéticos primarios`, el valor se añade a `linkCustomdata` sin usar `Math.abs()`.
 
 ### 4. Implementar los Cambios
 
@@ -338,3 +368,12 @@ Después de implementar los cambios, es crucial verificar que todo funcione como
 Si la verificación revela problemas o si el usuario solicita ajustes, repite los pasos anteriores, utilizando el feedback para refinar la solución. Mantén un registro de las interacciones y los cambios para mantener el contexto actualizado.
 
 Al seguir estos pasos, se busca maximizar la eficiencia y precisión de la asistencia de Gemini en el desarrollo del proyecto Gemini Sankey.
+
+### Refactorización del Código
+
+Con el objetivo de mejorar la legibilidad y mantenibilidad del script en `index.html`, se han realizado las siguientes refactorizaciones:
+
+* **Carga de Datos de Nodos:**
+  * **Problema:** La carga inicial de los datos para cada nodo principal era repetitiva, con una variable declarada para cada uno.
+  * **Solución:** Se introdujo una función auxiliar `getNodeData(nodeName)` que busca los datos de un nodo por su nombre. Los datos de todos los nodos ahora se almacenan en un único objeto `nodeData`, lo que reduce la duplicación y facilita la gestión del código.
+  * **Impacto:** El código es más limpio y fácil de mantener. No hay cambios en la funcionalidad del diagrama.
