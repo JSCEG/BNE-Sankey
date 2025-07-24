@@ -208,6 +208,7 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
   4.  **Fuentes de Energía -> Tecnologías de Generación:**
       *   Los energéticos (tanto primarios de `Oferta Interna Bruta` como secundarios de los centros de transformación) fluyen hacia los nodos de tecnología de generación que los consumen.
       *   La lógica para esta distribución se basa en un mapeo de combustibles a tecnologías (ver `fuelToTechMap` en `index.html`).
+      *   **Exclusión de Energía Eléctrica como Entrada:** Se excluye explícitamente la 'Energía eléctrica' como energético de entrada para las tecnologías de generación (Carboeléctrica, Térmica Convencional, Combustión Interna, Turbogás, Ciclo Combinado, Nucleoeléctrica, Cogeneración, Geotérmica, Eólica, Solar Fotovoltaica), ya que esta es una salida de las centrales y no un combustible que las alimente.
 
   5.  **Tecnologías de Generación -> `Centrales Eléctricas`:**
       *   Cada nodo de tecnología de generación suma la energía que recibe y la convierte en `Energía eléctrica`, que luego fluye hacia el nodo `Centrales Eléctricas`.
@@ -220,16 +221,18 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
   const fuelToTechMap = {
       'Carbón mineral': [carboelectricaIndex],
       'Coque de carbón': [carboelectricaIndex],
-      'Combustóleo': [termicaConvencionalIndex],
-      'Diesel': [combustionInternaIndex],
+      'Combustóleo': [termicaConvencionalIndex, combustionInternaIndex],
+      'Coque de petróleo': [termicaConvencionalIndex],
+      'Diesel': [combustionInternaIndex, turbogasIndex],
       'Gas natural': [cicloCombinadoIndex],
-      'Gas natural seco': [cicloCombinadoIndex, termicaConvencionalIndex], // Ejemplo de mapeo uno a muchos
+      'Gas natural seco': [cicloCombinadoIndex, termicaConvencionalIndex, combustionInternaIndex, turbogasIndex], // Ahora puede ir a Ciclo Combinado, Térmica Convencional, Combustión Interna y Turbogás
       'Energía Nuclear': [nucleoelectricaIndex],
       'Geoenergía': [geotermicaIndex],
       'Energía eólica': [eolicaIndex],
       'Energía solar': [solarFotovoltaicaIndex],
-      'Bagazo de caña': [termicaConvencionalIndex],
-      'Biogás': [termicaConvencionalIndex],
+      'Bagazo de caña': [termicaConvencionalIndex, combustionInternaIndex, turbogasIndex],
+      'Biogás': [termicaConvencionalIndex, combustionInternaIndex],
+      'Leña': [termicaConvencionalIndex]
       'Leña': [termicaConvencionalIndex],
       // ... y así sucesivamente para los demás combustibles
   };
@@ -237,6 +240,9 @@ A continuación se presenta la lista de nodos padre utilizada en el archivo dato
 
   **Manejo de Flujos Uno a Muchos:**
   La lógica de procesamiento de flujos en `index.html` ha sido actualizada para iterar sobre el array de `targetIndex` en `fuelToTechMap`. Esto permite que un solo energético pueda alimentar a múltiples tecnologías de generación, creando un enlace para cada destino especificado en el array. La determinación del nodo de origen (`sourceIndex`) sigue basándose en si el energético es de tipo 'Energía Primaria' (desde 'Oferta Interna Bruta') o 'Energía Secundaria' (desde los nodos de transformación correspondientes como Refinerías, Plantas de Gas o Coquizadoras).
+
+  **Escala Logarítmica para el Grosor de los Enlaces:**
+  Para mejorar la visualización de los flujos, especialmente cuando hay una gran diferencia entre los valores de los enlaces, se ha implementado una escala logarítmica. Los valores de los enlaces ahora se transforman utilizando `Math.log10(valor + 1)` antes de ser utilizados para determinar el grosor del enlace. Esto hace que los enlaces con valores pequeños sean más visibles sin distorsionar la proporcionalidad de los flujos más grandes.
 
 * **Reglas de Colores:**
 

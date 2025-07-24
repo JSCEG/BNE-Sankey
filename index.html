@@ -333,59 +333,66 @@
             const fuelToTechMap = {
                 'Carbón mineral': [carboelectricaIndex],
                 'Coque de carbón': [carboelectricaIndex],
-                'Combustóleo': [termicaConvencionalIndex],
+                'Combustóleo': [termicaConvencionalIndex, combustionInternaIndex],
                 'Coque de petróleo': [termicaConvencionalIndex],
-                'Diesel': [combustionInternaIndex],
+                'Diesel': [combustionInternaIndex, turbogasIndex],
                 'Gas natural': [cicloCombinadoIndex],
-                'Gas natural seco': [cicloCombinadoIndex, termicaConvencionalIndex], // Ahora puede ir a Ciclo Combinado y Térmica Convencional
+                'Gas natural seco': [cicloCombinadoIndex, termicaConvencionalIndex, combustionInternaIndex, turbogasIndex],
                 'Energía Nuclear': [nucleoelectricaIndex],
                 'Geoenergía': [geotermicaIndex],
                 'Energía eólica': [eolicaIndex],
                 'Energía solar': [solarFotovoltaicaIndex],
-                'Bagazo de caña': [termicaConvencionalIndex],
-                'Biogás': [termicaConvencionalIndex],
+                'Bagazo de caña': [termicaConvencionalIndex, combustionInternaIndex, turbogasIndex],
+                'Biogás': [termicaConvencionalIndex, combustionInternaIndex],
                 'Leña': [termicaConvencionalIndex],
-                // Nota: Turbogás y Térmica Convencional también pueden usar Gas Natural Seco,
-                // pero los datos no especifican la distribución.
             };
 
-            if (centralesElectricasData && centralesElectricasData['Nodos Hijo']) {
-                centralesElectricasData['Nodos Hijo'].forEach(fuel => {
-                    const flowValue = fuel[year];
-                    if (flowValue !== undefined && flowValue !== 0) {
+            const generationNodesForInput = [
+                { data: carboelectricaData, index: carboelectricaIndex, name: 'Carboeléctrica' },
+                { data: termicaConvencionalData, index: termicaConvencionalIndex, name: 'Térmica Convencional' },
+                { data: combustionInternaData, index: combustionInternaIndex, name: 'Combustión Interna' },
+                { data: turbogasData, index: turbogasIndex, name: 'Turbogás' },
+                { data: cicloCombinadoData, index: cicloCombinadoIndex, name: 'Ciclo Combinado' },
+                { data: nucleoelectricaData, index: nucleoelectricaIndex, name: 'Nucleoeléctrica' },
+                { data: cogeneracionData, index: cogeneracionIndex, name: 'Cogeneración' },
+                { data: geotermicaData, index: geotermicaIndex, name: 'Geotérmica' },
+                { data: eolicaData, index: eolicaIndex, name: 'Eólica' },
+                { data: solarFotovoltaicaData, index: solarFotovoltaicaIndex, name: 'Solar Fotovoltaica' }
+            ];
+
+            generationNodesForInput.forEach(genNode => {
+                if (genNode.data && genNode.data['Nodos Hijo']) {
+                    genNode.data['Nodos Hijo'].forEach(fuel => {
                         const fuelName = fuel['Nodo Hijo'];
                         const fuelColor = fuel.color;
-                        const targetIndices = fuelToTechMap[fuelName];
+                        const flowValue = fuel[year];
+                        if (flowValue !== undefined && flowValue !== 0 && fuelName !== 'Energía eléctrica') {
+                            const targetIndex = genNode.index; // El target es la tecnología de generación actual
 
-                        if (targetIndices && targetIndices.length > 0) {
-                            targetIndices.forEach(targetIndex => {
-                                let sourceIndex;
-                                if (fuel.tipo === 'Energía Primaria') {
-                                    sourceIndex = ofertaInternaBrutaIndex;
-                                } else { // Energía Secundaria
-                                    if (fuelName === 'Coque de carbón') {
-                                        sourceIndex = coquizadorasHornosIndex;
-                                    } else if (fuelName === 'Gas natural seco') {
-                                        // Simplificación: Asumimos que el gas seco para generación viene de plantas de gas
-                                        // si el dato existe, si no, de refinerías.
-                                        sourceIndex = plantasGasFraccionadorasData ? plantasGasFraccionadorasIndex : refineriasDespuntadorasIndex;
-                                    } else {
-                                        sourceIndex = refineriasDespuntadorasIndex;
-                                    }
+                            let sourceIndex;
+                            if (fuel.tipo === 'Energía Primaria') {
+                                sourceIndex = ofertaInternaBrutaIndex;
+                            } else { // Energía Secundaria
+                                if (fuelName === 'Coque de carbón') {
+                                    sourceIndex = coquizadorasHornosIndex;
+                                } else if (fuelName === 'Gas natural seco') {
+                                    sourceIndex = plantasGasFraccionadorasData ? plantasGasFraccionadorasIndex : refineriasDespuntadorasIndex;
+                                } else {
+                                    sourceIndex = refineriasDespuntadorasIndex;
                                 }
+                            }
 
-                                if (sourceIndex !== undefined) {
-                                    source.push(sourceIndex);
-                                    target.push(targetIndex);
-                                    value.push(Math.log10(Math.abs(flowValue) + 1));
-                                    linkColors.push(typeof fuelColor === 'string' ? fuelColor : '#888');
-                                    linkCustomdata.push(`${fuelName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
-                                }
-                            });
+                            if (sourceIndex !== undefined) {
+                                source.push(sourceIndex);
+                                target.push(targetIndex);
+                                value.push(Math.log10(Math.abs(flowValue) + 1));
+                                linkColors.push(typeof fuelColor === 'string' ? fuelColor : '#888');
+                                linkCustomdata.push(`${fuelName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
+                            }
                         }
-                    }
-                });
-            }
+                    });
+                }
+            });
 
             // --- 10. Procesar Flujos (Tecnologías de Generación -> Centrales Eléctricas) ---
             const generationNodes = [
