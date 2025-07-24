@@ -157,7 +157,7 @@
             const ofertaInternaBrutaIndex = addNode(String('Oferta Interna Bruta'), nodeData.ofertaInternaBruta.color);
             const exportacionIndex = addNode(String('Exportación'), nodeData.exportacion.color);
             const energiaNoAprovechadaIndex = addNode(String('Energía No Aprovechada'), nodeData.energiaNoAprovechada.color);
-            const consumoPropioIndex = addNode(String('Consumo Propio del Sector'), nodeData.consumoPropio.color);
+            //nst consumoPropioIndex = addNode(String('Consumo Propio del Sector'), nodeData.consumoPropio.color);
             const coquizadorasHornosIndex = addNode(String('Coquizadoras y Hornos'), nodeData.coquizadorasHornos.color);
             const refineriasDespuntadorasIndex = addNode(String('Refinerías y Despuntadoras'), nodeData.refineriasDespuntadoras.color);
             const plantasGasFraccionadorasIndex = addNode(String('Plantas de Gas y Fraccionadoras'), nodeData.plantasGasFraccionadoras.color);
@@ -462,24 +462,22 @@
             });
 
             // --- 13. Procesar Flujos de Salida (Oferta Total -> Consumo Propio del Sector) ---
-            nodeData.consumoPropio['Nodos Hijo'].forEach(child => {
-                const flowValue = child[year];
-                if (child.tipo === 'Energía Primaria' && flowValue !== undefined && flowValue !== 0) {
-                    const childName = child['Nodo Hijo'];
-                    const childColor = child.color;
-                    // const energyIndex = nodeMap.get(childName); // Obtener el índice del nodo de energético primario
-
-                    source.push(primariosHubIndex);
-                    target.push(consumoPropioIndex);
-                    value.push(Math.log10(Math.abs(flowValue) + 1));
-                    linkColors.push(
-                        typeof childColor === 'string'
-                            ? childColor
-                            : '#888'
-                    );
-                    linkCustomdata.push(`${childName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
-                }
-            });
+            // nodeData.consumoPropio['Nodos Hijo'].forEach(child => {
+            //     const flowValue = child[year];
+            //     if (child.tipo === 'Energía Primaria' && flowValue !== undefined && flowValue !== 0) {
+            //         const childName = child['Nodo Hijo'];
+            //         const childColor = child.color;
+            //         source.push(primariosHubIndex);
+            //         target.push(consumoPropioIndex);
+            //         value.push(Math.log10(Math.abs(flowValue) + 1));
+            //         linkColors.push(
+            //             typeof childColor === 'string'
+            //                 ? childColor
+            //                 : '#888'
+            //         );
+            //         linkCustomdata.push(`${childName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
+            //     }
+            // });
 
             // --- 6. Forzar Posiciones de los Nodos ---
             const nodeX = new Array(labels.length);
@@ -564,9 +562,9 @@
                 } else if (label === 'Exportación') {
                     nodeX[i] = 0.4; // Posición horizontal después del hub
                     nodeY[i] = 0.7; // Posición vertical
-                } else if (label === 'Consumo Propio del Sector') {
-                    nodeX[i] = 0.4; // Posición horizontal después del hub
-                    nodeY[i] = 0.8; // Posición vertical
+                    // } else if (label === 'Consumo Propio del Sector') {
+                    //     nodeX[i] = 0.4; // Posición horizontal después del hub
+                    //     nodeY[i] = 0.8; // Posición vertical
                 } else if (label === 'Energía No Aprovechada') {
                     nodeX[i] = 0.4; // Posición horizontal después del hub
                     nodeY[i] = 0.9; // Posición vertical
