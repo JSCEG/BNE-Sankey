@@ -626,6 +626,18 @@
                 if (label === 'Variación de inventarios de Energéticos primarios') {
                     return `+ Suma positiva: ${variacionPositiva.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ<br>- Suma negativa: ${variacionNegativa.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ<br>Total absoluto: ${variacionTotalAbs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ`;
                 }
+                if (label === 'Consumo Propio del Sector') {
+                    let totalConsumoPropio = 0;
+                    if (nodeData.consumoPropio && nodeData.consumoPropio['Nodos Hijo']) {
+                        nodeData.consumoPropio['Nodos Hijo'].forEach(child => {
+                            const flowValue = child[year];
+                            if (child.tipo === 'Energía Primaria' && flowValue !== undefined && flowValue !== 0) {
+                                totalConsumoPropio += flowValue;
+                            }
+                        });
+                    }
+                    return `<b>Total Consumo Propio (Energéticos primarios):</b> ${totalConsumoPropio.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ`;
+                }
                 return '';
             });
 
