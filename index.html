@@ -182,7 +182,7 @@
                         const childIndex = addNode(childName, childColor);
                         source.push(parentIndex);
                         target.push(childIndex);
-                        value.push(Math.abs(flowValue));
+                        value.push(Math.log10(Math.abs(flowValue) + 1));
                         linkColors.push(
                             typeof childColor === 'string'
                                 ? childColor
@@ -209,7 +209,7 @@
                 const energyColor = nodeColors[energyIndex];
                 source.push(energyIndex);
                 target.push(primariosHubIndex);
-                value.push(totalValue);
+                value.push(Math.log10(totalValue + 1));
                 linkColors.push(
                     typeof energyColor === 'string'
                         ? energyColor
@@ -227,7 +227,7 @@
 
                     source.push(primariosHubIndex);
                     target.push(ofertaInternaBrutaIndex);
-                    value.push(Math.abs(flowValue));
+                    value.push(Math.log10(Math.abs(flowValue) + 1));
                     linkColors.push(
                         typeof childColor === 'string'
                             ? childColor
@@ -246,7 +246,7 @@
 
                     source.push(primariosHubIndex);
                     target.push(exportacionIndex);
-                    value.push(Math.abs(flowValue));
+                    value.push(Math.log10(Math.abs(flowValue) + 1));
                     linkColors.push(
                         typeof childColor === 'string'
                             ? childColor
@@ -265,7 +265,7 @@
 
                     source.push(primariosHubIndex);
                     target.push(energiaNoAprovechadaIndex);
-                    value.push(Math.abs(flowValue));
+                    value.push(Math.log10(Math.abs(flowValue) + 1));
                     linkColors.push(
                         typeof childColor === 'string'
                             ? childColor
@@ -283,7 +283,7 @@
                     const childColor = child.color;
                     source.push(ofertaInternaBrutaIndex);
                     target.push(coquizadorasHornosIndex);
-                    value.push(Math.abs(flowValue));
+                    value.push(Math.log10(Math.abs(flowValue) + 1));
                     linkColors.push(
                         typeof childColor === 'string'
                             ? childColor
@@ -301,7 +301,7 @@
                     const childColor = child.color;
                     source.push(ofertaInternaBrutaIndex);
                     target.push(refineriasDespuntadorasIndex);
-                    value.push(Math.abs(flowValue));
+                    value.push(Math.log10(Math.abs(flowValue) + 1));
                     linkColors.push(
                         typeof childColor === 'string'
                             ? childColor
@@ -319,7 +319,7 @@
                     const childColor = child.color;
                     source.push(ofertaInternaBrutaIndex);
                     target.push(plantasGasFraccionadorasIndex);
-                    value.push(Math.abs(flowValue));
+                    value.push(Math.log10(Math.abs(flowValue) + 1));
                     linkColors.push(
                         typeof childColor === 'string'
                             ? childColor
@@ -376,7 +376,7 @@
                                 if (sourceIndex !== undefined) {
                                     source.push(sourceIndex);
                                     target.push(targetIndex);
-                                    value.push(Math.abs(flowValue));
+                                    value.push(Math.log10(Math.abs(flowValue) + 1));
                                     linkColors.push(typeof fuelColor === 'string' ? fuelColor : '#888');
                                     linkCustomdata.push(`${fuelName}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                                 }
@@ -408,7 +408,7 @@
                             if (flowValue !== undefined && flowValue !== 0) {
                                 source.push(genNode.index);
                                 target.push(centralesElectricasIndex);
-                                value.push(Math.abs(flowValue));
+                                value.push(Math.log10(Math.abs(flowValue) + 1));
                                 linkColors.push(typeof child.color === 'string' ? child.color : '#888');
                                 linkCustomdata.push(`Producción de ${genNode.name}: ${Math.abs(flowValue).toLocaleString()} PJ`);
                             }
@@ -427,7 +427,7 @@
 
                     source.push(primariosHubIndex);
                     target.push(consumoPropioIndex);
-                    value.push(Math.abs(flowValue));
+                    value.push(Math.log10(Math.abs(flowValue) + 1));
                     linkColors.push(
                         typeof childColor === 'string'
                             ? childColor
