@@ -606,6 +606,20 @@
                     breakdownText += `<br><b>Total: ${total.toLocaleString()} PJ</b>`;
                     return breakdownText;
                 }
+                if (label === 'Importación de energéticos primarios') {
+                    let totalImportacion = 0;
+                    for (const breakdown of primaryEnergyBreakdown.values()) {
+                        totalImportacion += breakdown.importacion;
+                    }
+                    return `Total Importación: ${totalImportacion.toLocaleString()} PJ`;
+                }
+                if (label === 'Producción') {
+                    let totalProduccion = 0;
+                    for (const breakdown of primaryEnergyBreakdown.values()) {
+                        totalProduccion += breakdown.produccion;
+                    }
+                    return `Total Producción: ${totalProduccion.toLocaleString()} PJ`;
+                }
                 if (label === 'Oferta Total (Hub)') {
                     return `Total Primarios: ${ofertaTotalHubValue.toLocaleString()} PJ`;
                 }

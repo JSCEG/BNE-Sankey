@@ -329,6 +329,15 @@ Para mejorar la claridad de la información presentada en el diagrama, se ha per
 *   **Nodo Producción:**
     *   **Contenido:** Muestra la suma total de la producción de todos los energéticos primarios.
     *   **Implementación:** Se itera sobre el `primaryEnergyBreakdown` para sumar los valores de producción de cada energético y se muestra el total en el popup del nodo.
+
+*   **Nodo Producción:**
+    *   **Contenido:** Muestra la suma total de la producción de todos los energéticos primarios.
+    *   **Implementación:** Se itera sobre el `primaryEnergyBreakdown` para sumar los valores de producción de cada energético y se muestra el total en el popup del nodo.
+
+*   **Nodo Importación de energéticos primarios:**
+    *   **Contenido:** Muestra la suma total de la importación de todos los energéticos primarios.
+    *   **Implementación:** Se itera sobre el `primaryEnergyBreakdown` para sumar los valores de importación de cada energético y se muestra el total en el popup del nodo.
+
 * **Nodo Oferta Total (Hub):**
 
   * **Contenido:** Muestra la suma total de todos los flujos de energéticos primarios que recibe.
