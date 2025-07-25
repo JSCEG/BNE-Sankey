@@ -91,6 +91,27 @@
         document.addEventListener('DOMContentLoaded', () => {
             const yearSelector = document.getElementById('year-selector');
             const svg = document.getElementById('sankey-canvas');
+
+            // Tooltip global
+            let tooltip = document.getElementById('sankey-tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'sankey-tooltip';
+                tooltip.style.position = 'fixed';
+                tooltip.style.pointerEvents = 'none';
+                tooltip.style.background = '#2563eb';
+                tooltip.style.color = '#fff';
+                tooltip.style.padding = '6px 14px';
+                tooltip.style.borderRadius = '8px';
+                tooltip.style.fontSize = '13px';
+                tooltip.style.fontFamily = 'Inter, sans-serif';
+                tooltip.style.fontWeight = '500';
+                tooltip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                tooltip.style.zIndex = '1000';
+                tooltip.style.display = 'none';
+                document.body.appendChild(tooltip);
+            }
+
             const years = ['2018', '2019', '2020', '2021', '2022', '2023', '2024'];
             years.sort((a, b) => b - a);
             years.forEach(year => {
@@ -109,107 +130,331 @@
                     drawImportacion(years[0]);
                 });
 
+            // Agrega el nodo padre "Oferta Total" en tu configuración
+            const nodosConfig = [
+                {
+                    jsonName: 'Importación',
+                    alias: 'Importación',
+                    color: '#2563eb',
+                    tipoFiltro: 'Energía Primaria'
+                },
+                {
+                    jsonName: 'Producción',
+                    alias: 'Producción',
+                    color: '#059669',
+                    tipoFiltro: 'Energía Primaria'
+                },
+                {
+                    jsonName: 'Variación de Inventarios',
+                    alias: 'Variación de Inventarios Energéticos Primarios',
+                    color: '#64748b',
+                    tipoFiltro: 'Energía Primaria'
+                },
+                {
+                    jsonName: 'Oferta Total',
+                    alias: 'Oferta Total',
+                    color: '#eab308',
+                    tipoFiltro: 'Energía Primaria'
+                }
+            ];
+
+            function drawSankey(year) {
+                svg.innerHTML = '';
+                const minHeight = 10, maxHeight = 30, maxValue = 5000;
+                const nodeW = 28;
+                let yBase = 100;
+
+                nodosConfig.forEach(cfg => {
+                    const nodo = energyData.find(d => d['Nodo Padre'] === cfg.jsonName);
+                    let total = 0;
+                    let hijosPositivos = [], hijosNegativos = [];
+                    if (nodo && nodo['Nodos Hijo']) {
+                        nodo['Nodos Hijo']
+                            .filter(hijo => hijo.tipo === cfg.tipoFiltro)
+                            .forEach(hijo => {
+                                const value = hijo[year] ?? 0;
+                                total += value;
+                                if (cfg.jsonName === 'Variación de Inventarios') {
+                                    if (value >= 0) hijosPositivos.push({ nombre: hijo['Nodo Hijo'], valor: value });
+                                    else hijosNegativos.push({ nombre: hijo['Nodo Hijo'], valor: value });
+                                }
+                            });
+                    }
+                    let nodeH = Math.max(minHeight, Math.min(maxHeight, (Math.abs(total) / maxValue) * maxHeight));
+                    let nodeX = 100;
+                    let nodeY = yBase;
+                    yBase += nodeH + 60;
+
+                    svg.innerHTML += `
+                        <rect id="node-${cfg.alias}" x="${nodeX}" y="${nodeY}" width="${nodeW}" height="${nodeH}" rx="0" fill="${cfg.color}" cursor="move" />
+                        <text id="label-${cfg.alias}" x="${nodeX + nodeW / 2}" y="${nodeY - 18}" text-anchor="middle" font-size="10" fill="${cfg.color}" font-weight="bold" font-family="Inter, sans-serif">${cfg.alias}</text>
+                        <text id="value-${cfg.alias}" x="${nodeX + nodeW / 2}" y="${nodeY - 4}" text-anchor="middle" font-size="8" fill="${cfg.color}" font-family="Inter, sans-serif">
+                            ${Math.abs(total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ
+                        </text>
+                    `;
+
+                    // Tooltip especial para Variación de Inventarios
+                    if (cfg.jsonName === 'Variación de Inventarios') {
+                        const nodeElem = document.getElementById(`node-${cfg.alias}`);
+                        nodeElem.addEventListener('mouseenter', (e) => {
+                            let html = `<div><b>Desglose (+):</b></div>`;
+                            hijosPositivos.forEach(h => {
+                                html += `<div style="color:#22c55e;">+ ${h.nombre}: ${h.valor.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ</div>`;
+                            });
+                            html += `<div style="margin-top:4px;"><b>Desglose (-):</b></div>`;
+                            hijosNegativos.forEach(h => {
+                                html += `<div style="color:#ef4444;">- ${h.nombre}: ${h.valor.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ</div>`;
+                            });
+                            html += `<div style="margin-top:6px;"><b>Total absoluto:</b> ${Math.abs(total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ</div>`;
+                            tooltip.innerHTML = html;
+                            tooltip.style.display = 'block';
+                        });
+                        nodeElem.addEventListener('mousemove', (e) => {
+                            tooltip.style.left = (e.clientX + 12) + 'px';
+                            tooltip.style.top = (e.clientY + 12) + 'px';
+                        });
+                        nodeElem.addEventListener('mouseleave', () => {
+                            tooltip.style.display = 'none';
+                        });
+                    } else {
+                        // Tooltip simple para otros nodos
+                        const nodeElem = document.getElementById(`node-${cfg.alias}`);
+                        nodeElem.addEventListener('mouseenter', (e) => {
+                            tooltip.innerHTML = `<b>${cfg.alias}</b><br>${Math.abs(total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ`;
+                            tooltip.style.display = 'block';
+                        });
+                        nodeElem.addEventListener('mousemove', (e) => {
+                            tooltip.style.left = (e.clientX + 12) + 'px';
+                            tooltip.style.top = (e.clientY + 12) + 'px';
+                        });
+                        nodeElem.addEventListener('mouseleave', () => {
+                            tooltip.style.display = 'none';
+                        });
+                    }
+
+                    makeNodeDraggable(`node-${cfg.alias}`, `label-${cfg.alias}`, `value-${cfg.alias}`, nodeW, nodeH, `x_${cfg.alias}`, `y_${cfg.alias}`);
+                });
+            }
+
             function drawImportacion(year) {
                 svg.innerHTML = '';
+
+                // --- Importación ---
                 const importacion = energyData.find(d => d['Nodo Padre'] === 'Importación');
-                if (!importacion) return;
-
-                // Filtra solo los valores de energía primaria
                 let totalImportaciones = 0;
-                let hijosPrimarios = [];
-                if (importacion['Nodos Hijo']) {
-                    hijosPrimarios = importacion['Nodos Hijo'].filter(hijo => hijo.tipo === 'Energía Primaria');
-                    hijosPrimarios.forEach(hijo => {
-                        const value = hijo[year] ?? 0;
-                        totalImportaciones += value;
-                    });
+                if (importacion && importacion['Nodos Hijo']) {
+                    importacion['Nodos Hijo']
+                        .filter(hijo => hijo.tipo === 'Energía Primaria')
+                        .forEach(hijo => {
+                            const value = hijo[year] ?? 0;
+                            totalImportaciones += value;
+                        });
                 }
-
-                // Factor de escala para el alto del nodo (más pequeño para muchos nodos)
-                const minHeight = 10;
-                const maxHeight = 30;
-                const maxValue = 5000;
-                let parentH = Math.max(minHeight, Math.min(maxHeight, (totalImportaciones / maxValue) * maxHeight));
-                const parentW = 28;
-
-                const parentX = window.importacionX ?? 100;
-                const parentY = window.importacionY ?? 100;
+                const minHeight = 10, maxHeight = 30, maxValue = 5000;
+                let importacionH = Math.max(minHeight, Math.min(maxHeight, (totalImportaciones / maxValue) * maxHeight));
+                const nodeW = 28;
+                const importacionX = window.importacionX ?? 100;
+                const importacionY = window.importacionY ?? 100;
 
                 svg.innerHTML += `
-                    <rect id="importacion-node" x="${parentX}" y="${parentY}" width="${parentW}" height="${parentH}" rx="0" fill="#2563eb" cursor="move" />
-                    <text id="importacion-label" x="${parentX + parentW / 2}" y="${parentY - 18}" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="bold" font-family="Inter, sans-serif">Importación</text>
-                    <text id="importacion-value" x="${parentX + parentW / 2}" y="${parentY - 4}" text-anchor="middle" font-size="8" fill="#2563eb" font-family="Inter, sans-serif">
+                    <rect id="importacion-node" x="${importacionX}" y="${importacionY}" width="${nodeW}" height="${importacionH}" rx="0" fill="#2563eb" cursor="move" />
+                    <text id="importacion-label" x="${importacionX + nodeW / 2}" y="${importacionY - 18}" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="bold" font-family="Inter, sans-serif">Importación</text>
+                    <text id="importacion-value" x="${importacionX + nodeW / 2}" y="${importacionY - 4}" text-anchor="middle" font-size="8" fill="#2563eb" font-family="Inter, sans-serif">
                         ${totalImportaciones.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ
                     </text>
                 `;
 
-                const node = document.getElementById('importacion-node');
-                const label = document.getElementById('importacion-label');
-                const valueLabel = document.getElementById('importacion-value');
-                let dragging = false, offsetX = 0, offsetY = 0;
-
-                // Crea el tooltip (popup)
-                let tooltip = document.getElementById('sankey-tooltip');
-                if (!tooltip) {
-                    tooltip = document.createElement('div');
-                    tooltip.id = 'sankey-tooltip';
-                    tooltip.style.position = 'fixed';
-                    tooltip.style.pointerEvents = 'none';
-                    tooltip.style.background = '#2563eb';
-                    tooltip.style.color = '#fff';
-                    tooltip.style.padding = '6px 14px';
-                    tooltip.style.borderRadius = '8px';
-                    tooltip.style.fontSize = '13px';
-                    tooltip.style.fontFamily = 'Inter, sans-serif';
-                    tooltip.style.fontWeight = '500';
-                    tooltip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-                    tooltip.style.zIndex = '1000';
-                    tooltip.style.display = 'none';
-                    document.body.appendChild(tooltip);
+                // --- Producción ---
+                const produccion = energyData.find(d => d['Nodo Padre'] === 'Producción');
+                let totalProduccion = 0;
+                if (produccion && produccion['Nodos Hijo']) {
+                    produccion['Nodos Hijo']
+                        .filter(hijo => hijo.tipo === 'Energía Primaria')
+                        .forEach(hijo => {
+                            const value = hijo[year] ?? 0;
+                            totalProduccion += value;
+                        });
                 }
+                let produccionH = Math.max(minHeight, Math.min(maxHeight, (totalProduccion / maxValue) * maxHeight));
+                const produccionX = window.produccionX ?? 100;
+                const produccionY = window.produccionY ?? (importacionY + importacionH + 60);
 
-                // Evento para mostrar el popup al pasar el mouse
-                node.addEventListener('mouseenter', (e) => {
-                    tooltip.textContent = `Importación: ${totalImportaciones.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ`;
-                    tooltip.style.display = 'block';
-                });
-                node.addEventListener('mousemove', (e) => {
-                    tooltip.style.left = (e.clientX + 12) + 'px';
-                    tooltip.style.top = (e.clientY + 12) + 'px';
-                });
-                node.addEventListener('mouseleave', () => {
-                    tooltip.style.display = 'none';
-                });
+                svg.innerHTML += `
+                    <rect id="produccion-node" x="${produccionX}" y="${produccionY}" width="${nodeW}" height="${produccionH}" rx="0" fill="#059669" cursor="move" />
+                    <text id="produccion-label" x="${produccionX + nodeW / 2}" y="${produccionY - 18}" text-anchor="middle" font-size="10" fill="#059669" font-weight="bold" font-family="Inter, sans-serif">Producción</text>
+                    <text id="produccion-value" x="${produccionX + nodeW / 2}" y="${produccionY - 4}" text-anchor="middle" font-size="8" fill="#059669" font-family="Inter, sans-serif">
+                        ${totalProduccion.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ
+                    </text>
+                `;
+
+                // --- Variación de Inventarios ---
+                const variacion = energyData.find(d => d['Nodo Padre'] === 'Variación de Inventarios');
+                let totalVariacion = 0;
+                let hijosPositivos = [];
+                let hijosNegativos = [];
+                if (variacion && variacion['Nodos Hijo']) {
+                    variacion['Nodos Hijo']
+                        .filter(hijo => hijo.tipo === 'Energía Primaria')
+                        .forEach(hijo => {
+                            const value = hijo[year] ?? 0;
+                            if (value >= 0) {
+                                hijosPositivos.push({ nombre: hijo['Nodo Hijo'], valor: value });
+                            } else {
+                                hijosNegativos.push({ nombre: hijo['Nodo Hijo'], valor: value });
+                            }
+                            totalVariacion += value;
+                        });
+                }
+                let variacionH = Math.max(minHeight, Math.min(maxHeight, (Math.abs(totalVariacion) / maxValue) * maxHeight));
+                const variacionX = window.variacionX ?? 100;
+                const variacionY = window.variacionY ?? (produccionY + produccionH + 60);
+
+                svg.innerHTML += `
+                    <rect id="variacion-node" x="${variacionX}" y="${variacionY}" width="${nodeW}" height="${variacionH}" rx="0" fill="#64748b" cursor="move" />
+                    <text id="variacion-label" x="${variacionX + nodeW / 2}" y="${variacionY - 18}" text-anchor="middle" font-size="10" fill="#64748b" font-weight="bold" font-family="Inter, sans-serif">Variación de Inventarios</text>
+                    <text id="variacion-value" x="${variacionX + nodeW / 2}" y="${variacionY - 4}" text-anchor="middle" font-size="8" fill="#64748b" font-family="Inter, sans-serif">
+                        ${Math.abs(totalVariacion).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ
+                    </text>
+                `;
+
+                // --- Oferta Total ---
+                // Suma solo los valores de nodos filtrados por "Energía Primaria"
+                const ofertaTotalX = window.ofertaTotalX ?? 400;
+                const ofertaTotalY = window.ofertaTotalY ?? 180;
+                const ofertaTotalW = 28;
+                const ofertaTotalColor = nodosConfig.find(n => n.jsonName === 'Oferta Total').color;
+
+                // Suma solo los valores de Energía Primaria
+                const ofertaTotalValor =
+                    (importacion && importacion['Nodos Hijo'] ? importacion['Nodos Hijo'].filter(h => h.tipo === 'Energía Primaria').reduce((acc, h) => acc + (h[year] ?? 0), 0) : 0) +
+                    (produccion && produccion['Nodos Hijo'] ? produccion['Nodos Hijo'].filter(h => h.tipo === 'Energía Primaria').reduce((acc, h) => acc + (h[year] ?? 0), 0) : 0) +
+                    (variacion && variacion['Nodos Hijo'] ? variacion['Nodos Hijo'].filter(h => h.tipo === 'Energía Primaria').reduce((acc, h) => acc + (h[year] ?? 0), 0) : 0);
+
+                const ofertaTotalH = Math.max(minHeight, Math.min(maxHeight, (Math.abs(ofertaTotalValor) / maxValue) * maxHeight));
+
+                svg.innerHTML += `
+                    <rect id="ofertaTotal-node" x="${ofertaTotalX}" y="${ofertaTotalY}" width="${ofertaTotalW}" height="${ofertaTotalH}" rx="0" fill="${ofertaTotalColor}" cursor="move" />
+                    <text id="ofertaTotal-label" x="${ofertaTotalX + ofertaTotalW / 2}" y="${ofertaTotalY - 18}" text-anchor="middle" font-size="10" fill="${ofertaTotalColor}" font-weight="bold" font-family="Inter, sans-serif">${nodosConfig.find(n => n.jsonName === 'Oferta Total').alias}</text>
+                    <text id="ofertaTotal-value" x="${ofertaTotalX + ofertaTotalW / 2}" y="${ofertaTotalY - 4}" text-anchor="middle" font-size="8" fill="${ofertaTotalColor}" font-family="Inter, sans-serif">
+                        ${Math.abs(ofertaTotalValor).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ
+                    </text>
+                `;
+
+                // Espera al siguiente ciclo para asegurar que el nodo existe
+                setTimeout(() => {
+                    makeNodeDraggable('ofertaTotal-node', 'ofertaTotal-label', 'ofertaTotal-value', ofertaTotalW, ofertaTotalH, 'ofertaTotalX', 'ofertaTotalY');
+                }, 0);
+
+                setTimeout(() => {
+                    // Importación
+                    makeNodeDraggable('importacion-node', 'importacion-label', 'importacion-value', nodeW, importacionH, 'importacionX', 'importacionY');
+                    const importacionNode = document.getElementById('importacion-node');
+                    importacionNode.addEventListener('mouseenter', (e) => {
+                        tooltip.innerHTML = `<b>${nodosConfig.find(n => n.jsonName === 'Importación').alias}</b><br>${totalImportaciones.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ`;
+                        tooltip.style.background = nodosConfig.find(n => n.jsonName === 'Importación').color;
+                        tooltip.style.display = 'block';
+                    });
+                    importacionNode.addEventListener('mousemove', (e) => {
+                        tooltip.style.left = (e.clientX + 12) + 'px';
+                        tooltip.style.top = (e.clientY + 12) + 'px';
+                    });
+                    importacionNode.addEventListener('mouseleave', () => {
+                        tooltip.style.display = 'none';
+                    });
+
+                    // Producción
+                    makeNodeDraggable('produccion-node', 'produccion-label', 'produccion-value', nodeW, produccionH, 'produccionX', 'produccionY');
+                    const produccionNode = document.getElementById('produccion-node');
+                    produccionNode.addEventListener('mouseenter', (e) => {
+                        tooltip.innerHTML = `<b>${nodosConfig.find(n => n.jsonName === 'Producción').alias}</b><br>${totalProduccion.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ`;
+                        tooltip.style.background = nodosConfig.find(n => n.jsonName === 'Producción').color;
+                        tooltip.style.display = 'block';
+                    });
+                    produccionNode.addEventListener('mousemove', (e) => {
+                        tooltip.style.left = (e.clientX + 12) + 'px';
+                        tooltip.style.top = (e.clientY + 12) + 'px';
+                    });
+                    produccionNode.addEventListener('mouseleave', () => {
+                        tooltip.style.display = 'none';
+                    });
+
+                    // Variación de Inventarios
+                    makeNodeDraggable('variacion-node', 'variacion-label', 'variacion-value', nodeW, variacionH, 'variacionX', 'variacionY');
+                    const variacionNode = document.getElementById('variacion-node');
+                    variacionNode.addEventListener('mouseenter', (e) => {
+                        let html = `<div><b>${nodosConfig.find(n => n.jsonName === 'Variación de Inventarios').alias}</b></div><div><b>Desglose (+):</b></div>`;
+                        hijosPositivos.forEach(h => {
+                            html += `<div style="color:#22c55e;">+ ${h.nombre}: ${h.valor.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ</div>`;
+                        });
+                        html += `<div style="margin-top:4px;"><b>Desglose (-):</b></div>`;
+                        hijosNegativos.forEach(h => {
+                            html += `<div style="color:#ef4444;">- ${h.nombre}: ${h.valor.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ</div>`;
+                        });
+                        html += `<div style="margin-top:6px;"><b>Total absoluto:</b> ${Math.abs(totalVariacion).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ</div>`;
+                        tooltip.innerHTML = html;
+                        tooltip.style.background = nodosConfig.find(n => n.jsonName === 'Variación de Inventarios').color;
+                        tooltip.style.display = 'block';
+                    });
+                    variacionNode.addEventListener('mousemove', (e) => {
+                        tooltip.style.left = (e.clientX + 12) + 'px';
+                        tooltip.style.top = (e.clientY + 12) + 'px';
+                    });
+                    variacionNode.addEventListener('mouseleave', () => {
+                        tooltip.style.display = 'none';
+                    });
+
+                    // Oferta Total
+                    makeNodeDraggable('ofertaTotal-node', 'ofertaTotal-label', 'ofertaTotal-value', ofertaTotalW, ofertaTotalH, 'ofertaTotalX', 'ofertaTotalY');
+                    const ofertaTotalNode = document.getElementById('ofertaTotal-node');
+                    ofertaTotalNode.addEventListener('mouseenter', (e) => {
+                        tooltip.innerHTML = `<b>${nodosConfig.find(n => n.jsonName === 'Oferta Total').alias}</b><br>${Math.abs(ofertaTotalValor).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ`;
+                        tooltip.style.background = nodosConfig.find(n => n.jsonName === 'Oferta Total').color;
+                        tooltip.style.display = 'block';
+                    });
+                    ofertaTotalNode.addEventListener('mousemove', (e) => {
+                        tooltip.style.left = (e.clientX + 12) + 'px';
+                        tooltip.style.top = (e.clientY + 12) + 'px';
+                    });
+                    ofertaTotalNode.addEventListener('mouseleave', () => {
+                        tooltip.style.display = 'none';
+                    });
+                }, 0);
+            }
+
+            function makeNodeDraggable(nodeId, labelId, valueId, nodeW, nodeH, posKeyX, posKeyY) {
+                const node = document.getElementById(nodeId);
+                const label = document.getElementById(labelId);
+                const valueLabel = document.getElementById(valueId);
+                if (!node) return;
+                let dragging = false, offsetX = 0, offsetY = 0;
 
                 node.addEventListener('mousedown', (e) => {
                     dragging = true;
-                    const rect = svg.getBoundingClientRect();
-                    offsetX = e.clientX - rect.left - parentX;
-                    offsetY = e.clientY - rect.top - parentY;
+                    const svgRect = svg.getBoundingClientRect();
+                    const svgW = svg.viewBox.baseVal.width;
+                    const svgH = svg.viewBox.baseVal.height;
+                    const scaleX = svgW / svgRect.width;
+                    const scaleY = svgH / svgRect.height;
+                    const nodeX = parseFloat(node.getAttribute('x'));
+                    const nodeY = parseFloat(node.getAttribute('y'));
+                    offsetX = (e.clientX - svgRect.left) * scaleX - nodeX;
+                    offsetY = (e.clientY - svgRect.top) * scaleY - nodeY;
                     node.setAttribute('opacity', '0.85');
 
                     function onMouseMove(ev) {
                         if (!dragging) return;
-                        // Calcula posición relativa al SVG
-                        const svgRect = svg.getBoundingClientRect();
-                        const svgW = svg.viewBox.baseVal.width;
-                        const svgH = svg.viewBox.baseVal.height;
-                        // Escala el movimiento si el SVG está redimensionado
-                        const scaleX = svgW / svgRect.width;
-                        const scaleY = svgH / svgRect.height;
-                        let x = (ev.clientX - svgRect.left - offsetX) * scaleX;
-                        let y = (ev.clientY - svgRect.top - offsetY) * scaleY;
-                        // Limita el movimiento dentro del SVG
-                        x = Math.max(0, Math.min(x, svgW - parentW));
-                        y = Math.max(0, Math.min(y, svgH - parentH));
+                        let x = ((ev.clientX - svgRect.left) * scaleX) - offsetX;
+                        let y = ((ev.clientY - svgRect.top) * scaleY) - offsetY;
+                        x = Math.max(0, Math.min(x, svgW - nodeW));
+                        y = Math.max(0, Math.min(y, svgH - nodeH));
                         node.setAttribute('x', x);
                         node.setAttribute('y', y);
-                        label.setAttribute('x', x + parentW / 2);
+                        label.setAttribute('x', x + nodeW / 2);
                         label.setAttribute('y', y - 18);
-                        valueLabel.setAttribute('x', x + parentW / 2);
+                        valueLabel.setAttribute('x', x + nodeW / 2);
                         valueLabel.setAttribute('y', y - 4);
-                        window.importacionX = x;
-                        window.importacionY = y;
+                        window[posKeyX] = x;
+                        window[posKeyY] = y;
                     }
                     function onMouseUp() {
                         dragging = false;
