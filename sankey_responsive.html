@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sankey Energía México - Responsive</title>
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: #f8fafc;
+        }
+
+        .minimal-select {
+            border: none;
+            border-radius: 8px;
+            background: #f1f5f9;
+            font-size: 0.95rem;
+            padding: 0.4rem 1.2rem;
+            color: #334155;
+            outline: none;
+            box-shadow: none;
+        }
+
+        .minimal-btn {
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: #fff;
+            font-size: 0.95rem;
+            padding: 0.4rem 1.2rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .minimal-btn:hover {
+            background: #1e40af;
+        }
+
+        .minimal-label {
+            font-size: 0.95rem;
+            color: #64748b;
+            font-weight: 500;
+            margin-right: 0.7rem;
+        }
+
+        .sankey-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 0.7rem;
+            margin-top: 0.7rem;
+            letter-spacing: 0.02em;
+        }
+
+        #sankey-tooltip {
+            position: fixed;
+            pointer-events: none;
+            background: #2563eb;
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: Inter, sans-serif;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="flex flex-col items-center w-full h-screen m-0 p-0">
+        <div class="sankey-title text-center">Diagrama de Sankey de Energía en México</div>
+        <div class="flex items-center gap-2 mb-2">
+            <label for="year-selector" class="minimal-label">Año:</label>
+            <select id="year-selector" class="minimal-select"></select>
+            <button id="download-btn" class="minimal-btn">Descargar PNG</button>
+        </div>
+        <div class="w-full h-full flex-1">
+            <!-- Lienzo SVG para el Sankey -->
+            <svg id="sankey-canvas" class="w-full h-full bg-white rounded shadow"
+                style="display:block; margin:0; padding:0;" viewBox="0 0 1200 600" preserveAspectRatio="none"></svg>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const yearSelector = document.getElementById('year-selector');
+            const svg = document.getElementById('sankey-canvas');
+            const years = ['2018', '2019', '2020', '2021', '2022', '2023', '2024'];
+            years.sort((a, b) => b - a);
+            years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelector.appendChild(option);
+            });
+
+            let energyData = [];
+
+            fetch('datos_energia_completo.json')
+                .then(res => res.json())
+                .then(json => {
+                    energyData = json.Datos;
+                    drawImportacion(years[0]);
+                });
+
+            function drawImportacion(year) {
+                svg.innerHTML = '';
+                const importacion = energyData.find(d => d['Nodo Padre'] === 'Importación');
+                if (!importacion) return;
+
+                // Filtra solo los valores de energía primaria
+                let totalImportaciones = 0;
+                let hijosPrimarios = [];
+                if (importacion['Nodos Hijo']) {
+                    hijosPrimarios = importacion['Nodos Hijo'].filter(hijo => hijo.tipo === 'Energía Primaria');
+                    hijosPrimarios.forEach(hijo => {
+                        const value = hijo[year] ?? 0;
+                        totalImportaciones += value;
+                    });
+                }
+
+                // Factor de escala para el alto del nodo (más pequeño para muchos nodos)
+                const minHeight = 10;
+                const maxHeight = 30;
+                const maxValue = 5000;
+                let parentH = Math.max(minHeight, Math.min(maxHeight, (totalImportaciones / maxValue) * maxHeight));
+                const parentW = 28;
+
+                const parentX = window.importacionX ?? 100;
+                const parentY = window.importacionY ?? 100;
+
+                svg.innerHTML += `
+                    <rect id="importacion-node" x="${parentX}" y="${parentY}" width="${parentW}" height="${parentH}" rx="0" fill="#2563eb" cursor="move" />
+                    <text id="importacion-label" x="${parentX + parentW / 2}" y="${parentY - 18}" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="bold" font-family="Inter, sans-serif">Importación</text>
+                    <text id="importacion-value" x="${parentX + parentW / 2}" y="${parentY - 4}" text-anchor="middle" font-size="8" fill="#2563eb" font-family="Inter, sans-serif">
+                        ${totalImportaciones.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ
+                    </text>
+                `;
+
+                const node = document.getElementById('importacion-node');
+                const label = document.getElementById('importacion-label');
+                const valueLabel = document.getElementById('importacion-value');
+                let dragging = false, offsetX = 0, offsetY = 0;
+
+                // Crea el tooltip (popup)
+                let tooltip = document.getElementById('sankey-tooltip');
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.id = 'sankey-tooltip';
+                    tooltip.style.position = 'fixed';
+                    tooltip.style.pointerEvents = 'none';
+                    tooltip.style.background = '#2563eb';
+                    tooltip.style.color = '#fff';
+                    tooltip.style.padding = '6px 14px';
+                    tooltip.style.borderRadius = '8px';
+                    tooltip.style.fontSize = '13px';
+                    tooltip.style.fontFamily = 'Inter, sans-serif';
+                    tooltip.style.fontWeight = '500';
+                    tooltip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                    tooltip.style.zIndex = '1000';
+                    tooltip.style.display = 'none';
+                    document.body.appendChild(tooltip);
+                }
+
+                // Evento para mostrar el popup al pasar el mouse
+                node.addEventListener('mouseenter', (e) => {
+                    tooltip.textContent = `Importación: ${totalImportaciones.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PJ`;
+                    tooltip.style.display = 'block';
+                });
+                node.addEventListener('mousemove', (e) => {
+                    tooltip.style.left = (e.clientX + 12) + 'px';
+                    tooltip.style.top = (e.clientY + 12) + 'px';
+                });
+                node.addEventListener('mouseleave', () => {
+                    tooltip.style.display = 'none';
+                });
+
+                node.addEventListener('mousedown', (e) => {
+                    dragging = true;
+                    const rect = svg.getBoundingClientRect();
+                    offsetX = e.clientX - rect.left - parentX;
+                    offsetY = e.clientY - rect.top - parentY;
+                    node.setAttribute('opacity', '0.85');
+
+                    function onMouseMove(ev) {
+                        if (!dragging) return;
+                        // Calcula posición relativa al SVG
+                        const svgRect = svg.getBoundingClientRect();
+                        const svgW = svg.viewBox.baseVal.width;
+                        const svgH = svg.viewBox.baseVal.height;
+                        // Escala el movimiento si el SVG está redimensionado
+                        const scaleX = svgW / svgRect.width;
+                        const scaleY = svgH / svgRect.height;
+                        let x = (ev.clientX - svgRect.left - offsetX) * scaleX;
+                        let y = (ev.clientY - svgRect.top - offsetY) * scaleY;
+                        // Limita el movimiento dentro del SVG
+                        x = Math.max(0, Math.min(x, svgW - parentW));
+                        y = Math.max(0, Math.min(y, svgH - parentH));
+                        node.setAttribute('x', x);
+                        node.setAttribute('y', y);
+                        label.setAttribute('x', x + parentW / 2);
+                        label.setAttribute('y', y - 18);
+                        valueLabel.setAttribute('x', x + parentW / 2);
+                        valueLabel.setAttribute('y', y - 4);
+                        window.importacionX = x;
+                        window.importacionY = y;
+                    }
+                    function onMouseUp() {
+                        dragging = false;
+                        node.setAttribute('opacity', '1');
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                    }
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                });
+            }
+
+            yearSelector.addEventListener('change', e => {
+                drawImportacion(e.target.value);
+            });
+
+            // Botón para descargar el SVG como PNG
+            document.getElementById('download-btn').addEventListener('click', () => {
+                const svg = document.getElementById('sankey-canvas');
+                const serializer = new XMLSerializer();
+                const svgString = serializer.serializeToString(svg);
+
+                // Crea una imagen a partir del SVG
+                const img = new Image();
+                const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(svgBlob);
+
+                img.onload = function () {
+                    // Alta resolución: multiplica el tamaño base
+                    const scale = 3; // Puedes ajustar el factor de escala
+                    const canvas = document.createElement('canvas');
+                    canvas.width = svg.viewBox.baseVal.width * scale;
+                    canvas.height = svg.viewBox.baseVal.height * scale;
+                    const ctx = canvas.getContext('2d');
+                    ctx.setTransform(scale, 0, 0, scale, 0, 0); // Escala el dibujo
+                    ctx.drawImage(img, 0, 0);
+                    URL.revokeObjectURL(url);
+
+                    // Descarga el PNG en alta resolución
+                    const a = document.createElement('a');
+                    a.download = 'sankey.png';
+                    a.href = canvas.toDataURL('image/png');
+                    a.click();
+                };
+                img.src = url;
+            });
+        });
+    </script>
+</body>
+
+</html>
